@@ -278,6 +278,7 @@ document.querySelectorAll(".square, .circle").forEach(btn => {
 
     update();
     butts.classList.add("lock");
+    document.querySelector(".display").classList.remove("lock")
   });
 });
 
@@ -305,6 +306,8 @@ document.querySelector(".bold-btn").addEventListener("click", () => {
     wicketFallen = false;
     stop.classList.remove("lock") 
     butts.classList.add("lock")
+    document.querySelector(".display").classList.remove("lock")
+
 
     update();
     return;
@@ -317,6 +320,7 @@ document.querySelector(".bold-btn").addEventListener("click", () => {
   renderPlayers();
   document.querySelector(".team-players").classList.remove("lock");
   butts.classList.add("lock");
+  document.querySelector(".display").classList.remove("lock")
 
   update();
 });
@@ -330,6 +334,7 @@ stop.addEventListener("click", () => {
   infoContainer.classList.remove("locked");
   document.querySelector(".team-players").classList.add("lock");
   butts.classList.remove("lock");
+  document.querySelector(".display").classList.add("lock")
 });
 
 /* =========================
@@ -357,6 +362,7 @@ const actions = {
 
     update();
     butts.classList.add("lock");
+    document.querySelector(".display").classList.remove("lock")
   }
 };
 
