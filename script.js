@@ -224,6 +224,8 @@ function renderPlayers() {
         nonstrike.innerText = name;
 
         allset = true;
+        document.querySelector(".display").classList.remove("lock");
+
       }
 
       update();
