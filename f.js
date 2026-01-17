@@ -1,273 +1,136 @@
-const strike = document.querySelector(".player-box");
-const nonstrike = document.querySelector(".nstrike");
-const infoContainer = document.getElementById("infoContainer");
-const stop = document.querySelector("#stop");
-const butts = document.querySelector(".runs");
-
-const info = document.querySelector("#wic");
-const oinfo = document.querySelector("#otherinfo");
-
-/*===========================*/
-/* CAMERA + RECORDING LOGIC */
-/*===========================*/
-
-const video = document.getElementById("camera");
-const status = document.getElementById("status");
-const recordBtn = document.getElementById("record");
-const stopBtn = document.getElementById("stop");
-const abandonBtn = document.getElementById("abandon");
-
-let stream;
-let recorder;
-let chunks = [];
-let isRecording = false;
-let isPaused = false;
-let discard = false;
-
-/* ✅ CAMERA INIT (ONLY WHEN NEEDED) */
-async function initCamera() {
-  if (stream) return;
-
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" },
-      audio: true
-    });
-    video.srcObject = stream;
-    status.textContent = "Camera ready";
-  } catch (err) {
-    status.textContent = "Camera access failed";
-    console.error(err);
-  }
-}
-
-/* START RECORDING */
-async function startRecording() {
-  if (!allset) {
-    status.textContent = "Select strike & non-strike first";
-    return;
-  }
-
-  await initCamera();
-
-  chunks = [];
-  discard = false;
-
-  recorder = new MediaRecorder(stream);
-  recorder.ondataavailable = e => {
-    if (e.data.size) chunks.push(e.data);
-  };
-
-  recorder.onstop = () => {
-    if (discard) return;
-
-    const blob = new Blob(chunks, { type: "video/webm" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "recording.webm";
-    a.click();
-
-    URL.revokeObjectURL(url);
-    status.textContent = "Video saved";
-  };
-
-  recorder.start();
-  isRecording = true;
-  isPaused = false;
-  recordBtn.textContent = "⏸";
-  status.textContent = "Recording…";
-}
-
-/* PAUSE / RESUME */
-function togglePause() {
-  if (!isRecording) return;
-
-  if (!isPaused) {
-    recorder.pause();
-    isPaused = true;
-    recordBtn.textContent = "▶";
-    status.textContent = "Paused";
-  } else {
-    recorder.resume();
-    isPaused = false;
-    recordBtn.textContent = "⏸";
-    status.textContent = "Recording…";
-  }
-}
-
-/* STOP & SAVE */
-function stopAndSave() {
-  if (!isRecording) return;
-  discard = false;
-  recorder.stop();
-  isRecording = false;
-  isPaused = false;
-  recordBtn.textContent = "▶";
-}
-
-/* ABANDON */
-function abandonRecording() {
-  if (!isRecording) return;
-  discard = true;
-  recorder.stop();
-  isRecording = false;
-  isPaused = false;
-  recordBtn.textContent = "▶";
-  status.textContent = "Recording abandoned";
-}
-
-/* EVENTS */
-recordBtn.onclick = () => {
-  if (!isRecording) startRecording();
-  else togglePause();
-};
-stopBtn.onclick = stopAndSave;
-abandonBtn.onclick = abandonRecording;
-
-/* =========================
-   UI UPDATE
-========================= */
-function update() {
-  info.innerText = `Wic : ${players.wicket}`;
-  oinfo.innerHTML = `
-    Over : ${players.overs}
-    &nbsp;&nbsp; Ball : ${players.totalballs - players.overs * 6}
-    &nbsp;&nbsp; Run : ${players.totalruns}
-  `;
-}
-
-/* =========================
-   MATCH DATA
-========================= */
 function createPlayer() {
   return {
-    runs: 0,
-    balls: 0,
-    sixes: 0,
-    fours: 0,
-    bold: false,
-    get runRate() {
+      runs: 0,
+      balls: 0,
+      sixes: 0,
+      fours: 0,
+      bold: false,
+      get runRate() {
       return this.balls ? (this.runs / this.balls) * 6 : 0;
-    }
+      }
   };
 }
 
 const players = {
-  mohit: createPlayer(),
-  nitin: createPlayer(),
-  amit: createPlayer(),
-  mirdul: createPlayer(),
+    mohit: createPlayer(),
+    nitin: createPlayer(),
+    amit: createPlayer(),
+    mirdul: createPlayer(),
+    nihal : createPlayer(),
+    rohan: createPlayer(), // Added for demo fullness
+    vikram: createPlayer(), // Added for demo fullness
 
+    totalruns: 0,
+    totalballs: 0,
+    overs: 0,
+    wicket: 0
+};
+
+// Populate Grid
+Object.entries(players).forEach(([name, player]) => {
+  if (!player || typeof player !== "object" || !("runs" in player)) return;
+
+  const div = document.createElement("div");
+  div.className = "grid-box";
+
+  if (player.bold) return;
+
+  div.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+  document.querySelector(".top-grid").appendChild(div);
+});
+
+const playerss = document.querySelectorAll(".grid-box");
+const team1 = document.querySelector(".team-1");
+const team2 = document.querySelector(".team-2");
+
+let turn = 0; 
+
+playerss.forEach(item => {
+  item.addEventListener("click", () => {
+    if (item.classList.contains("selected")) return;
+
+    item.classList.add("selected");
+
+    const row = document.createElement("div");
+    row.className = "team-row";
+    
+    // UI Tweak: Added first letter to circle
+    const initial = item.innerText.charAt(0);
+    
+    row.innerHTML = `
+      <div class="circle">${initial}</div>
+      <div class="rect">${item.innerText}</div>
+    `;
+
+    const targetTeam = turn % 2 === 0 ? team1 : team2;
+    targetTeam.appendChild(row);
+
+    turn++;
+
+    row.addEventListener("click", () => {
+      row.remove();
+      item.classList.remove("selected");
+
+      turn--;
+      if (turn < 0) turn = 0;
+    });
+  });
+});
+
+const teamStats = () => ({
   totalruns: 0,
   totalballs: 0,
   overs: 0,
   wicket: 0
-};
+});
 
-const inning_score = {};
-
-/* =========================
-   STATE FLAGS
-========================= */
-let strikeSet = false;
-let allset = false;
-let wicketFallen = false;
-
-/* =========================
-   HELPERS
-========================= */
-function getAvailableBatsmen() {
-  return Object.keys(players).filter(p => typeof players[p] === "object");
+function getTeamNames(containerSelector) {
+  return [...document.querySelectorAll(`${containerSelector} .rect`)]
+    .map(el => el.innerText.toLowerCase().trim());
 }
 
-/* =========================
-   RENDER PLAYERS
-========================= */
-function renderPlayers() {
-  const parent = document.querySelector("#teamplayer");
-  if (!parent) return;
+function buildTeamsOnGo(players) {
+  const team1Names = getTeamNames(".team-1");
+  const team2Names = getTeamNames(".team-2");
 
-  parent.innerHTML = "";
+  const team1 = teamStats();
+  const team2 = teamStats();
 
-  for (const name of getAvailableBatsmen()) {
-    const div = document.createElement("div");
-    div.className = "team-player";
-    div.innerText = name;
+  Object.entries(players).forEach(([name, data]) => {
+    if (typeof data !== "object" || !("runs" in data)) return;
 
-    if (wicketFallen && name === nonstrike.innerText) {
-      div.classList.add("disabled");
+    if (team1Names.includes(name.toLowerCase())) {
+      team1[name] = data;
+    } 
+    else if (team2Names.includes(name.toLowerCase())) {
+      team2[name] = data;
     }
+  });
 
-    div.addEventListener("click", () => {
-
-      if (wicketFallen) {
-        if (name === nonstrike.innerText) return;
-        strike.innerText = name;
-        wicketFallen = false;
-        update();
-        stop.classList.remove("lock");
-        return;
-      }
-
-      if (!strikeSet) {
-        strike.innerText = name;
-        strikeSet = true;
-        stop.classList.remove("lock");
-      } else if (strike.innerText !== name) {
-        nonstrike.innerText = name;
-        allset = true;
-        status.textContent = "Players set. Ready to record.";
-      }
-
-      update();
-    });
-
-    parent.appendChild(div);
-  }
+  return { team1, team2 };
 }
 
-renderPlayers();
+const goBtn = document.querySelector(".go-btn");
 
-/* =========================
-   FINALIZE OUT PLAYER
-========================= */
-function finalizeOutPlayer() {
-  for (const name in players) {
-    if (players[name]?.bold) {
-      inning_score[name] = players[name];
-      delete players[name];
-    }
-  }
-}
+goBtn.addEventListener("click", () => {
+  const { team1, team2 } = buildTeamsOnGo(players);
 
-/* =========================
-   RUN BUTTONS
-========================= */
-document.querySelectorAll(".square, .circle").forEach(btn => {
-  btn.addEventListener("click", () => {
-    if (!allset) return;
 
-    const run = +btn.innerText;
-    const batter = players[strike.innerText];
+  localStorage.setItem("team1",JSON.stringify(team1));
+  localStorage.setItem("team2",JSON.stringify(team2));
 
-    players.totalballs++;
-    players.totalruns += run;
-    batter.runs += run;
-    batter.balls++;
 
-    if (run === 4) batter.fours++;
-    if (run === 6) batter.sixes++;
+  goBtn.textContent = "Teams Locked!";
+  goBtn.style.background = "#10b981"; // Green color
+  
+  document.querySelectorAll(".grid-box").forEach(el => {
+    el.style.pointerEvents = "none";
 
-    if (run === 1 || run === 3 || players.totalballs % 6 === 0) {
-      [strike.innerText, nonstrike.innerText] =
-        [nonstrike.innerText, strike.innerText];
-    }
-
-    if (players.totalballs % 6 === 0) players.overs++;
-
-    update();
-    butts.classList.add("lock");
+  window.location.href = "index.html"
+  });
+  
+  // Disable removing players
+  document.querySelectorAll(".team-row").forEach(el => {
+    el.style.pointerEvents = "none";
   });
 });
