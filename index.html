@@ -223,6 +223,26 @@ body{
     font-weight:700;
     cursor:pointer;
 }
+
+.preview-panel {
+  margin-top: 10px;
+}
+
+.preview-videos {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin-top: 8px;
+}
+
+.preview-videos video {
+  width: 120px;
+  height: 80px;
+  border-radius: 8px;
+  background: #000;
+}
+
+
 .bold-btn{
     width:160px;
     height:44px;
@@ -264,6 +284,10 @@ body{
 
         <!-- TEAM -->
         <div class="batting" id ="bating">Team 1</div>
+        <div class="preview-panel">
+        <button id="previewBtn">Preview Over 🎥</button>
+        <div class="preview-videos" id="previewVideos"></div>
+        </div>
         <div class="batting team-players" id="teamplayer"></div>
 
         <!-- PLAYERS -->

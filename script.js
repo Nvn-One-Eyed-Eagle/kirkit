@@ -5,6 +5,11 @@
 const team1 = JSON.parse(localStorage.getItem("team1"));
 const team2 = JSON.parse(localStorage.getItem("team2"));
 const over = JSON.parse(localStorage.getItem("overs"));
+const previewBtn = document.getElementById("previewBtn");
+const previewVideos = document.getElementById("previewVideos");
+
+let overVideos = []; // stores video URLs
+
 
 if (!team1 || !team2) {
   alert("Teams not selected!");
@@ -22,6 +27,123 @@ const info = document.querySelector("#wic");
 const oinfo = document.querySelector("#otherinfo");
 
 let inningsCompleted = 0; 
+
+
+
+/*===========================*/
+
+
+
+const video = document.getElementById("camera");
+const status = document.getElementById("status");
+const recordBtn = document.getElementById("record");
+const stopBtn = document.getElementById("stop");
+const abandonBtn = document.getElementById("abandon");
+
+let stream;
+let recorder;
+let chunks = [];
+let isRecording = false;
+let isPaused = false;
+let discard = false;
+
+// INIT CAMERA (BACK CAMERA)
+(async () => {
+    try{
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" },
+            audio: true
+        });
+        video.srcObject = stream;
+        status.textContent = "Back camera ready";
+    }catch(err){
+        status.textContent = "Camera access failed";
+        console.error(err);
+    }
+})();
+
+// START RECORDING
+function startRecording(){
+    chunks = [];
+    discard = false;
+
+    recorder = new MediaRecorder(stream);
+    recorder.ondataavailable = e => {
+        if (e.data.size) chunks.push(e.data);
+    };
+
+    recorder.onstop = () => {
+        if (discard) return;
+
+        const blob = new Blob(chunks, { type: "video/webm" });
+        const url = URL.createObjectURL(blob);
+
+        overVideos.push(url);
+
+        // keep only last 6 balls (1 over)
+        if (overVideos.length > 6) {
+            URL.revokeObjectURL(overVideos.shift());
+        }
+
+        status.textContent = "Ball recorded";
+    };
+
+
+    recorder.start();
+    isRecording = true;
+    isPaused = false;
+    recordBtn.textContent = "⏸";
+    status.textContent = "Recording…";
+}
+
+// PAUSE / RESUME
+function togglePause(){
+    if (!isRecording) return;
+
+    if (!isPaused){
+        recorder.pause();
+        isPaused = true;
+        recordBtn.textContent = "▶";
+        status.textContent = "Paused";
+    } else {
+        recorder.resume();
+        isPaused = false;
+        recordBtn.textContent = "⏸";
+        status.textContent = "Recording…";
+    }
+}
+
+// STOP & SAVE
+function stopAndSave(){
+    if (!isRecording) return;
+    discard = false;
+    recorder.stop();
+    isRecording = false;
+    isPaused = false;
+    recordBtn.textContent = "▶";
+}
+
+// ABANDON
+function abandonRecording(){
+    if (!isRecording) return;
+    discard = true;
+    recorder.stop();
+    isRecording = false;
+    isPaused = false;
+    recordBtn.textContent = "▶";
+    status.textContent = "Recording abandoned";
+}
+
+// EVENTS
+recordBtn.onclick = () => {
+    if (!isRecording) startRecording();
+    else togglePause();
+};
+
+stopBtn.onclick = stopAndSave;
+abandonBtn.onclick = abandonRecording;
+
+
 
 /* =========================
    UI UPDATE
@@ -67,6 +189,24 @@ function getAvailableBatsmen() {
 function isAllOut() {
   return getAvailableBatsmen().length === 0;
 }
+
+previewBtn.addEventListener("click", () => {
+    previewVideos.innerHTML = "";
+
+    if (overVideos.length === 0) {
+        alert("No videos recorded for this over");
+        return;
+    }
+
+    overVideos.forEach(url => {
+        const vid = document.createElement("video");
+        vid.src = url;
+        vid.controls = true;
+        vid.playsInline = true;
+        previewVideos.appendChild(vid);
+    });
+});
+
 
 
 /* =========================
