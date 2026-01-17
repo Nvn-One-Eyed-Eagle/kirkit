@@ -4,6 +4,7 @@
 
 const team1 = JSON.parse(localStorage.getItem("team1"));
 const team2 = JSON.parse(localStorage.getItem("team2"));
+const over = JSON.parse(localStorage.getItem("overs"));
 
 if (!team1 || !team2) {
   alert("Teams not selected!");
@@ -33,6 +34,14 @@ function update() {
     &nbsp;&nbsp; Run : ${players.totalruns}
   `;
 }
+
+/* =========================
+   RADIAL MENU
+========================= */
+document.getElementById("radialBtn").addEventListener("click", () => {
+  document.getElementById("radialMenu").classList.toggle("active");
+});
+
 
 /* =========================
    MATCH DATA
@@ -130,6 +139,9 @@ function finalizeOutPlayer() {
 ========================= */
 function endInning() {
   console.log("Inning Over");
+  butts.classList.add("lock");
+  document.querySelector("#radialBtn").classList.add("lock")
+  document.querySelector("#bating").innerText = "Team 2";
 
   // Save remaining players' scores
   for (const name in players) {
@@ -201,6 +213,7 @@ document.querySelectorAll(".square, .circle").forEach(btn => {
 
     update();
     butts.classList.add("lock");
+    document.querySelector("#radialBtn").classList.add("lock")
     document.querySelector(".display").classList.remove("lock");
   });
 });
@@ -233,6 +246,7 @@ document.querySelector(".bold-btn").addEventListener("click", () => {
     wicketFallen = false;
     stop.classList.remove("lock");
     butts.classList.add("lock");
+    document.querySelector("#radialBtn").classList.add("lock")
     document.querySelector(".display").classList.remove("lock");
     update();
     return;
@@ -242,6 +256,7 @@ document.querySelector(".bold-btn").addEventListener("click", () => {
   strike.innerText = "Select...";
   renderPlayers();
   butts.classList.add("lock");
+  document.querySelector("#radialBtn").classList.add("lock")
   document.querySelector(".display").classList.remove("lock");
   update();
 });
@@ -250,8 +265,8 @@ document.querySelector(".bold-btn").addEventListener("click", () => {
    STOP BUTTON
 ========================= */
 stop.addEventListener("click", () => {
+  document.querySelector("#radialBtn").classList.remove("lock");
   if (!allset) return;
-
   infoContainer.classList.remove("locked");
   butts.classList.remove("lock");
   document.querySelector(".display").classList.add("lock");
@@ -262,6 +277,8 @@ stop.addEventListener("click", () => {
 ========================= */
 document.querySelector(".dot-btn")?.addEventListener("click", () => {
   if (!allset) return;
+  butts.classList.add("lock");
+  document.getElementById("radialMenu").classList.toggle("active");
 
   players.totalballs++;
   players[strike.innerText].balls++;
@@ -272,13 +289,13 @@ document.querySelector(".dot-btn")?.addEventListener("click", () => {
 
     players.overs++;
 
-  if (players.overs === 1 || isAllOut()) {
+  if (players.overs === over || isAllOut()) {
     endInning();
     return;
   }
   }
 
   update();
-  butts.classList.add("lock");
+  document.querySelector("#radialBtn").classList.add("lock")
   document.querySelector(".display").classList.remove("lock");
 });

@@ -112,10 +112,14 @@ function buildTeamsOnGo(players) {
 
 const goBtn = document.querySelector(".go-btn");
 
+
+
 goBtn.addEventListener("click", () => {
   const { team1, team2 } = buildTeamsOnGo(players);
+  const overs = Number(document.getElementById("oversInput").value) || 0;
+  if (overs <= 0) return alert("Enter valid overs");
 
-
+  localStorage.setItem("overs",JSON.stringify(overs));
   localStorage.setItem("team1",JSON.stringify(team1));
   localStorage.setItem("team2",JSON.stringify(team2));
 
