@@ -1,18 +1,217 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Match Over</title>
 
-</body>
+<style>
+:root{
+  --primary:#2563eb;
+  --dark:#0f172a;
+  --muted:#64748b;
+  --bg:#f1f5f9;
+  --card:#ffffff;
+}
+
+*{
+  box-sizing:border-box;
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  padding:16px;
+}
+
+.container{
+  max-width:520px;
+  margin:auto;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+
+/* ===== HEADER ===== */
+.header{
+  background:var(--card);
+  padding:20px;
+  border-radius:18px;
+  box-shadow:0 8px 24px rgba(0,0,0,.08);
+  text-align:center;
+}
+
+.header h1{
+  margin:0;
+  font-size:22px;
+  color:var(--dark);
+}
+
+.header p{
+  margin:6px 0 0;
+  color:var(--muted);
+  font-weight:600;
+}
+
+/* ===== TEAM CARD ===== */
+.team-card{
+  background:var(--card);
+  padding:16px;
+  border-radius:16px;
+  box-shadow:0 8px 24px rgba(0,0,0,.08);
+}
+
+.team-title{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:12px;
+}
+
+.team-title h2{
+  margin:0;
+  font-size:18px;
+}
+
+.score{
+  font-weight:800;
+  color:var(--primary);
+}
+
+/* ===== PLAYER LIST ===== */
+.player{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px 0;
+  border-bottom:1px solid #e5e7eb;
+}
+
+.player:last-child{
+  border-bottom:none;
+}
+
+.player-name{
+  font-weight:700;
+}
+
+.player-meta{
+  text-align:right;
+  font-size:13px;
+  color:var(--muted);
+}
+
+/* ===== MVP CARD ===== */
+.mvp{
+  background:linear-gradient(135deg,#1e3a8a,#2563eb);
+  color:#fff;
+  padding:20px;
+  border-radius:18px;
+  box-shadow:0 12px 30px rgba(0,0,0,.25);
+}
+
+.mvp h2{
+  margin:0 0 12px;
+  font-size:20px;
+}
+
+.mvp-name{
+  font-size:22px;
+  font-weight:900;
+}
+
+.mvp-stats{
+  margin-top:10px;
+  display:flex;
+  justify-content:space-between;
+  font-size:14px;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1 id="winnerText">Winner</h1>
+    <p id="winnerScore"></p>
+  </div>
+
+  <div class="team-card" id="winnerTeam"></div>
+
+  <div class="mvp" id="mvpCard"></div>
+
+</div>
 
 <script>
-    const team1 = JSON.parse(localStorage.getItem("team1"));
-    const team2 = JSON.parse(localStorage.getItem("team2"));
-    console.log(team1);
-    console.log(team2);
+/* ===== LOAD DATA ===== */
+const team1 = JSON.parse(localStorage.getItem("team1"));
+const team2 = JSON.parse(localStorage.getItem("team2"));
+
+/* ===== HELPERS ===== */
+function runRate(team){
+  return team.totalballs
+    ? ((team.totalruns / team.totalballs) * 6).toFixed(2)
+    : "0.00";
+}
+
+function getPlayers(team){
+  return Object.entries(team)
+    .filter(([_,v]) => typeof v === "object" && "runs" in v)
+    .sort((a,b) => b[1].runs - a[1].runs);
+}
+
+/* ===== DETERMINE WINNER ===== */
+const winner = team1.totalruns > team2.totalruns ? team1 : team2;
+const loser  = winner === team1 ? team2 : team1;
+
+/* ===== HEADER ===== */
+document.getElementById("winnerText").innerText =
+  `🏆 Winner Team (${winner.totalruns > loser.totalruns ? "Won" : "Tie"})`;
+
+document.getElementById("winnerScore").innerText =
+  `${winner.totalruns}/${winner.wicket}  •  RR ${runRate(winner)}`;
+
+/* ===== RENDER WINNER TEAM ===== */
+const teamDiv = document.getElementById("winnerTeam");
+teamDiv.innerHTML = `
+  <div class="team-title">
+    <h2>Batting Scorecard</h2>
+    <span class="score">${winner.totalruns}/${winner.wicket}</span>
+  </div>
+`;
+
+getPlayers(winner).forEach(([name,p])=>{
+  const div = document.createElement("div");
+  div.className = "player";
+  div.innerHTML = `
+    <span class="player-name">${name}</span>
+    <span class="player-meta">
+      ${p.runs} (${p.balls})<br>
+      4s:${p.fours} 6s:${p.sixes}
+    </span>
+  `;
+  teamDiv.appendChild(div);
+});
+
+/* ===== MVP ===== */
+const allPlayers = [
+  ...getPlayers(team1),
+  ...getPlayers(team2)
+];
+
+const [mvpName,mvp] = allPlayers.sort((a,b)=>b[1].runs - a[1].runs)[0];
+
+document.getElementById("mvpCard").innerHTML = `
+  <h2>🏅 MVP of the Match</h2>
+  <div class="mvp-name">${mvpName}</div>
+  <div class="mvp-stats">
+    <span>Runs: ${mvp.runs}</span>
+    <span>Balls: ${mvp.balls}</span>
+    <span>RR: ${((mvp.runs / mvp.balls) * 6 || 0).toFixed(2)}</span>
+  </div>
+`;
 </script>
+</body>
 </html>
