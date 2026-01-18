@@ -371,7 +371,7 @@ function endInning() {
 
   inningsCompleted++;
 
-  // 👉 IF BOTH TEAMS HAVE BATTED
+  // IF BOTH TEAMS HAVE BATTED
   if (inningsCompleted === 2) {
     // Optional: store final scores
     localStorage.setItem("team1", JSON.stringify(team1));
@@ -424,6 +424,7 @@ document.querySelectorAll(".square, .circle").forEach(btn => {
     if (players.totalballs % 6 === 0) {
       players.overs++;
       document.querySelector("#overlay").classList.add("activey")
+      document.querySelector(".app").classList.add("lock")
       renderOverStats(players);
 
 
@@ -511,6 +512,7 @@ document.querySelector(".dot-btn")?.addEventListener("click", () => {
 
     players.overs++;
     document.querySelector("#overlay").classList.add("activey")
+    document.querySelector(".app").classList.add("lock")
     renderOverStats(players);
 
 
@@ -528,6 +530,7 @@ document.querySelector(".dot-btn")?.addEventListener("click", () => {
 
 document.querySelector("#cont").addEventListener("click",() => {
   document.querySelector("#overlay").classList.remove("activey");
+  document.querySelector(".app").classList.remove("lock")
   overVideos.length = 0;
 })
 
