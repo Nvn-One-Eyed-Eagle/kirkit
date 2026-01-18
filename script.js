@@ -221,7 +221,7 @@ function givevids() {
         vid.src = url;
         vid.autoplay = false;      // important
         vid.muted = true;
-        vid.controls = false;
+        vid.controls = true;
         vid.playsInline = true;
         vid.preload = "metadata";
 
