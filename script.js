@@ -207,31 +207,46 @@ previewBtn.addEventListener("click", () => {
     });
 });
 
-function givevids(){
-    const wrapper = document.createElement("div");
-    wrapper.className = "overlay-scroll";
+function givevids() {
+    const wrapper = document.createDocumentFragment();
 
     if (overVideos.length === 0) {
-        wrapper.innerText = "No video to show";
-        return wrapper;
+        const msg = document.createElement("div");
+        msg.innerText = "No video to show";
+        return msg;
     }
 
     overVideos.forEach(url => {
         const vid = document.createElement("video");
         vid.src = url;
-        vid.autoplay = true;
+        vid.autoplay = false;      // important
         vid.muted = true;
-        vid.loop = true;
-        vid.controls = false;
+        vid.controls = true;
         vid.playsInline = true;
-        vid.style.width = "100%";
-        vid.style.height = "100%";
-        vid.style.flexShrink = "0"; // prevent shrinking
+        vid.preload = "metadata";
+
         wrapper.appendChild(vid);
     });
 
     return wrapper;
 }
+function enableAutoSwitch(container) {
+    const videos = container.querySelectorAll("video");
+
+    videos.forEach((vid, index) => {
+        vid.addEventListener("ended", () => {
+            const next = videos[index + 1];
+            if (next) {
+                next.play();
+                next.scrollIntoView({ behavior: "smooth", inline: "start" });
+            }
+        });
+    });
+
+    // autoplay first video
+    if (videos[0]) videos[0].play();
+}
+
 
 function getSortedPlayers(playersObj) {
   return Object.entries(playersObj)
@@ -244,6 +259,7 @@ function renderOverStats(playersObj) {
   content.innerHTML = "";              // clear old content
   document.querySelector(".overlay-title").innerText = `Over : ${players.overs}`
   content.appendChild(givevids());
+  enableAutoSwitch(content);
   const box = document.querySelector(".overlay-box");
 
   const sortedPlayers = getSortedPlayers(playersObj);

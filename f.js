@@ -13,12 +13,11 @@ function createPlayer() {
 
 const players = {
     mohit: createPlayer(),
-    nitin: createPlayer(),
-    amit: createPlayer(),
+    vikram: createPlayer(),
+    kangana: createPlayer(),
     mirdul: createPlayer(),
-    nihal : createPlayer(),
-    rohan: createPlayer(), // Added for demo fullness
-    vikram: createPlayer(), // Added for demo fullness
+    rannout : createPlayer(),
+    betal: createPlayer(), // Added for demo fullness
 
     totalruns: 0,
     totalballs: 0,
