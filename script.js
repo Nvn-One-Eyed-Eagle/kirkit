@@ -509,7 +509,8 @@ document.querySelector(".dot-btn")?.addEventListener("click", () => {
 });
 
 document.querySelector("#cont").addEventListener("click",() => {
-document.querySelector("#overlay").classList.remove("activey");
+  document.querySelector("#overlay").classList.remove("activey");
+  overVideos.length = 0;
 })
 
 
