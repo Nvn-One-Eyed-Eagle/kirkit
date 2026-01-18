@@ -209,6 +209,7 @@ previewBtn.addEventListener("click", () => {
 
 function givevids(){
     const wrapper = document.createElement("div");
+    wrapper.className = "overlay-scroll";
 
     if (overVideos.length === 0) {
         wrapper.innerText = "No video to show";
@@ -224,7 +225,8 @@ function givevids(){
         vid.controls = false;
         vid.playsInline = true;
         vid.style.width = "100%";
-        vid.style.marginBottom = "10px";
+        vid.style.height = "100%";
+        vid.style.flexShrink = "0"; // prevent shrinking
         wrapper.appendChild(vid);
     });
 
