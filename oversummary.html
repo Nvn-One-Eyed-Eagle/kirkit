@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Over Summary</title>
+
+<style>
+:root{
+    --blue:#2f6fa3;
+    --light:#eef6fb;
+    --dark:#1f3f5b;
+    --accent:#4da3ff;
+}
+
+*{
+    box-sizing:border-box;
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+
+body{
+    margin:0;
+    background:linear-gradient(160deg,#e7f1fa,#ffffff);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:12px;
+}
+
+/* MAIN CONTAINER */
+.app{
+    width:100%;
+    max-width:420px;
+    border:3px solid var(--blue);
+    border-radius:16px;
+    padding:14px;
+    background:#fff;
+    animation: fadeIn 1s ease-in-out;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    transition: box-shadow 0.3s ease;
+}
+
+.app:hover {
+    box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* OVER HEADER */
+.over-header{
+    width:120px;
+    margin:0 auto 16px;
+    border:3px solid var(--blue);
+    border-radius:8px;
+    text-align:center;
+    font-weight:800;
+    font-size:20px;
+    padding:4px 0;
+    background:linear-gradient(135deg,#ffffff,#dbeeff);
+    color:var(--dark);
+    transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.over-header:hover {
+    background: linear-gradient(135deg,#dbeeff,#ffffff);
+    transform: scale(1.05);
+}
+
+/* TOP SECTION */
+.top-section{
+    display:flex;
+    gap:12px;
+    margin-bottom:16px;
+}
+
+.big-box{
+    flex:1.2;
+    height:90px;
+    border:3px solid var(--blue);
+    border-radius:12px;
+    background:linear-gradient(135deg,#cfe7ff,#ffffff);
+    transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.big-box:hover {
+    background: linear-gradient(135deg,#b3d9ff,#ffffff);
+    transform: scale(1.02);
+}
+
+.runs-info{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    font-weight:700;
+    color:var(--dark);
+    font-size:14px;
+    transition: color 0.3s ease;
+}
+
+.runs-info:hover {
+    color: var(--accent);
+}
+
+.runs-info div{
+    border-bottom:2px solid var(--blue);
+    padding-bottom:4px;
+    transition: border-color 0.3s ease;
+}
+
+.runs-info div:hover {
+    border-color: var(--accent);
+}
+
+/* MIDDLE SECTION (Fixed to match top-section layout) */
+.middle-section{
+    display:flex;
+    gap:12px;
+    margin-bottom:16px;
+    align-items: center;
+}
+
+.middle-box{
+    flex:1.2;
+    height:60px;
+    border:3px solid var(--blue);
+    border-radius:10px;
+    background:linear-gradient(135deg,#ffffff,#e6f2fb);
+    transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.middle-box:hover {
+    background: linear-gradient(135deg,#e6f2fb,#ffffff);
+    transform: scale(1.02);
+}
+
+.middle-info{
+    flex:1;
+    font-weight:700;
+    color:var(--dark);
+    font-size:14px;
+    transition: color 0.3s ease;
+}
+
+.middle-info:hover {
+    color: var(--accent);
+}
+
+/* BALL DETAILS */
+.ball-details{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    row-gap:10px;
+    column-gap:12px;
+    font-weight:700;
+    color:var(--dark);
+    font-size:14px;
+    margin-bottom:18px;
+}
+
+.ball-details div{
+    padding:4px 0;
+    transition: background 0.3s ease;
+}
+
+.ball-details div:hover {
+    background: rgba(77, 163, 255, 0.1);
+}
+
+/* CONTINUE BUTTON */
+.continue-btn{
+    width:160px;
+    height:40px;
+    margin:0 auto;
+    border-radius:20px;
+    border:3px solid var(--blue);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:800;
+    font-size:16px;
+    background:linear-gradient(135deg,#4da3ff,#2f6fa3);
+    color:#fff;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+    animation: pulse 2s infinite;
+}
+
+.continue-btn:hover {
+    background: linear-gradient(135deg,#2f6fa3,#4da3ff);
+    transform: scale(1.05);
+    box-shadow: 0 8px 16px rgba(47, 111, 163, 0.4);
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(77, 163, 255, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(77, 163, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(77, 163, 255, 0); }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- OVER HEADER -->
+    <div class="over-header">OVER!</div>
+
+    <!-- TOP SECTION -->
+    <div class="top-section">
+        <div class="big-box"></div>
+
+        <div class="runs-info">
+            <div>15 runs / 3 balls</div>
+        </div>
+    </div>
+
+    <!-- MIDDLE SECTION (Added to match layout) -->
+    <div class="middle-section">
+        <div class="middle-box"></div>
+
+        <div class="middle-info">
+            <div>10 runs / 2 balls</div>
+        </div>
+    </div>
+
+    <!-- BALL DETAILS -->
+    <div class="ball-details">
+        <div>Ball (1) → 6</div>
+        <div>Ball (2) → 5</div>
+
+        <div>Ball (3) → 4</div>
+        <div>Ball (4) → 4</div>
+
+        <div>Ball (5) → 2</div>
+        <div>Ball (6) → 1</div>
+    </div>
+
+    <!-- CONTINUE BUTTON -->
+    <div class="continue-btn">Continue</div>
+
+</div>
+
+</body>
+</html>

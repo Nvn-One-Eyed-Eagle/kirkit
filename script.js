@@ -207,6 +207,67 @@ previewBtn.addEventListener("click", () => {
     });
 });
 
+function givevids(){
+    const wrapper = document.createElement("div");
+
+    if (overVideos.length === 0) {
+        wrapper.innerText = "No video to show";
+        return wrapper;
+    }
+
+    overVideos.forEach(url => {
+        const vid = document.createElement("video");
+        vid.src = url;
+        vid.autoplay = true;
+        vid.muted = true;
+        vid.loop = true;
+        vid.controls = false;
+        vid.playsInline = true;
+        vid.style.width = "100%";
+        vid.style.marginBottom = "10px";
+        wrapper.appendChild(vid);
+    });
+
+    return wrapper;
+}
+
+function getSortedPlayers(playersObj) {
+  return Object.entries(playersObj)
+    .filter(([_, data]) => typeof data === "object" && "runs" in data)
+    .sort((a, b) => b[1].runs - a[1].runs); // descending runs
+}
+
+function renderOverStats(playersObj) {
+  const content = document.querySelector(".overlay-content");
+  content.innerHTML = "";              // clear old content
+  document.querySelector(".overlay-title").innerText = `Over : ${players.overs}`
+  content.appendChild(givevids());
+  const box = document.querySelector(".overlay-box");
+
+  const sortedPlayers = getSortedPlayers(playersObj);
+
+  sortedPlayers.forEach(([name, p]) => {
+    const card = document.createElement("div");
+    card.className = "player-card";
+
+    card.innerHTML = `
+      <div class="player-row">
+        <span class="player-name">${name.toUpperCase()}</span>
+        <span class="player-score">${p.runs} (${p.balls})</span>
+        <span class="player-status ${p.bold ? "out" : "notout"}">
+          ${p.bold ? "OUT" : "NOT OUT"}
+        </span>
+      </div>
+      <div class="player-meta">
+        <span>4s: ${p.fours}</span>
+        <span>6s: ${p.sixes}</span>
+      </div>
+    `;
+
+    document.querySelector(".playerdata").appendChild(card);
+  });
+}
+
 
 
 /* =========================
@@ -344,8 +405,11 @@ document.querySelectorAll(".square, .circle").forEach(btn => {
 
     if (players.totalballs % 6 === 0) {
       players.overs++;
+      document.querySelector("#overlay").classList.add("activey")
+      renderOverStats(players);
 
-    if (players.overs === 1 || isAllOut()) {
+
+    if (players.overs === over || isAllOut()) {
       endInning();
       return;
     }
@@ -428,6 +492,10 @@ document.querySelector(".dot-btn")?.addEventListener("click", () => {
       [nonstrike.innerText, strike.innerText];
 
     players.overs++;
+    document.querySelector("#overlay").classList.add("activey")
+    renderOverStats(players);
+
+
 
   if (players.overs === over || isAllOut()) {
     endInning();
@@ -439,3 +507,9 @@ document.querySelector(".dot-btn")?.addEventListener("click", () => {
   document.querySelector("#radialBtn").classList.add("lock")
   document.querySelector(".display").classList.remove("lock");
 });
+
+document.querySelector("#cont").addEventListener("click",() => {
+document.querySelector("#overlay").classList.remove("activey");
+})
+
+

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cricket Highlights UI</title>
+<style>
+    * {
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+    }
+
+    body {
+        background: #e9f3f8;
+        padding: 20px;
+    }
+
+    .main-container {
+        width: 100%;
+        max-width: 900px;
+        margin: auto;
+        background: #ffffff;
+        border: 3px solid #1e88a8;
+        padding: 20px;
+    }
+
+    /* TOP SECTION */
+    .top-section {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+
+    .left-grid {
+        width: 35%;
+    }
+
+    .grid-box {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        border: 2px solid #1e88a8;
+        padding: 10px;
+        /* Removed cursor: pointer; since onclick is removed */
+    }
+
+    .grid-box div {
+        height: 60px;
+        background: #b3e5fc;
+        border: 2px solid #1e88a8;
+    }
+
+    .right-info {
+        width: 60%;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .pill {
+        border: 2px solid #1e88a8;
+        padding: 10px;
+        text-align: center;
+        background: #e1f5fe;
+        border-radius: 25px;
+        font-weight: bold;
+        color: #0d47a1;
+        cursor: pointer;
+    }
+
+    .view-best-shots {
+        width: 20vh;
+        border: 2px solid #1e88a8;
+        padding: 10px;
+        text-align: center;
+        background: #e1f5fe;
+        font-weight: bold;
+        color: #0d47a1;
+        cursor: pointer;
+        /* Left side rectangular, right side curved */
+        border-radius: 0 25px 25px 0;
+        /* Attach to left border by removing left border-radius and ensuring it aligns */
+        border-left: none;
+        margin-left: -2px; /* To attach to the left border visually */
+        position: relative;
+        transform: translate(-18px,0px);
+    }
+
+    /* PLAYER HIGHLIGHTS */
+    .section-title {
+        margin: 20px 0 10px;
+        font-weight: bold;
+        color: #0d47a1;
+    }
+
+    .highlights-container {
+        border: 2px solid #1e88a8;
+        padding: 10px;
+    }
+
+    .highlight-row {
+        display: flex;
+        border-bottom: 2px solid #1e88a8;
+        padding: 10px 0;
+    }
+
+    .highlight-row:last-child {
+        border-bottom: none;
+    }
+
+    .image-box {
+        width: 30%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .image-placeholder {
+        background: #90caf9;
+        border: 2px solid #1e88a8;
+    }
+
+    .big {
+        width: 120px;
+        height: 70px;
+    }
+
+    .small {
+        width: 90px;
+        height: 50px;
+    }
+
+    .stats-box {
+        width: 70%;
+        border-left: 2px solid #1e88a8;
+        padding-left: 15px;
+        color: #0d47a1;
+    }
+
+    .stats-box div {
+        margin-bottom: 5px;
+    }
+
+    /* CONTINUE BUTTON */
+    .continue-btn {
+        margin-top: 20px;
+        text-align: center;
+    }
+
+    .continue-btn button {
+        padding: 12px 40px;
+        font-size: 16px;
+        border: none;
+        background: #1e88a8;
+        color: white;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+
+    .continue-btn button:hover {
+        background: #1565c0;
+    }
+
+    /* POPUP */
+    .popup {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .popup-content {
+        background: white;
+        padding: 20px;
+        border: 3px solid #1e88a8;
+        width: 300px;
+        text-align: center;
+    }
+
+    .popup-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        border: 2px solid #1e88a8;
+        padding: 10px;
+    }
+
+    .popup-grid div {
+        height: 60px;
+        background: #b3e5fc;
+        border: 2px solid #1e88a8;
+    }
+
+    .popup-content button {
+        margin-top: 15px;
+        padding: 8px 20px;
+        background: #1e88a8;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+
+    /* RESPONSIVE DESIGN */
+    @media (max-width: 768px) {
+        .top-section {
+            flex-direction: column;
+        }
+
+        .left-grid {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .right-info {
+            width: 100%;
+        }
+
+        .highlight-row {
+            flex-direction: column;
+        }
+
+        .image-box {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .stats-box {
+            width: 100%;
+            border-left: none;
+            padding-left: 0;
+            border-top: 2px solid #1e88a8;
+            padding-top: 10px;
+        }
+
+        .popup-content {
+            width: 90%;
+            max-width: 400px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .popup-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .grid-box {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="main-container">
+
+    <!-- TOP SECTION -->
+    <div class="top-section">
+        <div class="left-grid">
+            <div class="grid-box">
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+        </div>
+
+        <div class="right-info">
+            <div class="pill">Inning Over</div>
+            <div class="view-best-shots" onclick="openPopup()">View Best Shots</div>
+            <div class="pill">32 Runs / 48 balls</div>
+        </div>
+    </div>
+
+    <!-- PLAYER HIGHLIGHTS -->
+    <div class="section-title">Player Highlights</div>
+
+    <div class="highlights-container">
+        <div class="highlight-row">
+            <div class="image-box">
+                <div class="image-placeholder big"></div>
+            </div>
+            <div class="stats-box">
+                <div>Run Rate : 3.2</div>
+                <div>Six : 4 | Four : 2</div>
+            </div>
+        </div>
+
+        <div class="highlight-row">
+            <div class="image-box">
+                <div class="image-placeholder small"></div>
+            </div>
+            <div class="stats-box">
+                <div>Run Rate : 5</div>
+                <div>Six : 5 | Four : 3</div>
+            </div>
+        </div>
+
+        <div class="highlight-row">
+            <div class="image-box">
+                <div class="image-placeholder small"></div>
+            </div>
+            <div class="stats-box">
+                <div>Run Rate : 5</div>
+                <div>Six : 4 | Four : 2</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTINUE -->
+    <div class="continue-btn">
+        <button>Continue</button>
+    </div>
+
+</div>
+
+<!-- POPUP -->
+<div class="popup" id="popup">
+    <div class="popup-content">
+        <h3>Best Shots</h3>
+        <div class="popup-grid">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+        <button onclick="closePopup()">Close</button>
+    </div>
+</div>
+
+<script>
+    function openPopup() {
+        document.getElementById("popup").style.display = "flex";
+    }
+
+    function closePopup() {
+        document.getElementById("popup").style.display = "none";
+    }
+</script>
+
+</body>
+</html>
