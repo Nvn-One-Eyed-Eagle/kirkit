@@ -20,7 +20,6 @@ Object.entries(team).forEach(([name, player]) => {
 	const title = document.createElement("div");
 	title.className = "section-title";
 	title.innerHTML = `
-		<h2>BEST OF THE INNINGS</h2>
 		<p>${name.toUpperCase()} – ${player.runs} (${player.balls})</p>
 	`;
 	section.appendChild(title);
@@ -103,3 +102,7 @@ closeBtn.onclick = () => {
 lightbox.onclick = (e) => {
 	if (e.target === lightbox) closeBtn.click();
 };
+
+document.querySelector(".continue").addEventListener("click", ()=>{
+    window.location.href = "match.html";
+})
