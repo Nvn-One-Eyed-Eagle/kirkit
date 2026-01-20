@@ -109,6 +109,7 @@ const continueBtn = document.querySelector(".continue");
 
 if (continueBtn) {
     continueBtn.addEventListener("click", () => {
+        localStorage.setItem("innings",JSON.stringify(2));
         window.location.href = inning === 1 ? "match.html" : "matchover.html";
     });
 }

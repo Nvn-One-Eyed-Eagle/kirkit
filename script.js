@@ -5,6 +5,8 @@ const team1 = JSON.parse(localStorage.getItem("team1"));
 const team2 = JSON.parse(localStorage.getItem("team2"));
 const over = JSON.parse(localStorage.getItem("overs"));
 
+const inningsCompleted =localStorage.getItem("innings") || 0;
+
 if (!team1 || !team2) {
     alert("Teams not selected!");
 }
@@ -34,7 +36,7 @@ const abandonBtn = document.getElementById("abandon");
    GAME STATE
    ========================================================================== */
 let players = team1; // ⚠️ MUST BE let (inning switch)
-let inningsCompleted = 0;
+// let inningsCompleted = 0;
 let strikeSet = false;
 let allset = false;
 let wicketFallen = false;
