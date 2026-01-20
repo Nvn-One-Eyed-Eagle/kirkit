@@ -335,6 +335,7 @@ function endInning() {
         // Optional: store final scores
         localStorage.setItem("team1", JSON.stringify(team1));
         localStorage.setItem("team2", JSON.stringify(team2));
+        localStorage.setItem("inningsCompleted", JSON.stringify(inningsCompleted))
 
         //STOP EVERYTHING & REDIRECT
         window.location.href = "inning-over.html";

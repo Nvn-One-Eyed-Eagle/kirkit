@@ -2,6 +2,8 @@ const team =
 	JSON.parse(localStorage.getItem("team1")) ||
 	JSON.parse(localStorage.getItem("team2"));
 
+const inning = Number(localStorage.getItem("inningsCompleted"));
+
 const container = document.getElementById("highlights");
 
 Object.entries(team).forEach(([name, player]) => {
@@ -103,6 +105,11 @@ lightbox.onclick = (e) => {
 	if (e.target === lightbox) closeBtn.click();
 };
 
-document.querySelector(".continue").addEventListener("click", ()=>{
-    window.location.href = "match.html";
-})
+const continueBtn = document.querySelector(".continue");
+
+if (continueBtn) {
+    continueBtn.addEventListener("click", () => {
+        window.location.href = inning === 1 ? "match.html" : "matchover.html";
+    });
+}
+
