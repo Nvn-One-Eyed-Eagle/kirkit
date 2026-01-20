@@ -189,7 +189,7 @@ getPlayers(winner).forEach(([name,p])=>{
     <span class="player-name">${name}</span>
     <span class="player-meta">
       ${p.runs} (${p.balls})<br>
-      4s:${p.fours} 6s:${p.sixes}
+      4s:${p["fours"].length} 6s:${p["sixes"].length}
     </span>
   `;
   teamDiv.appendChild(div);

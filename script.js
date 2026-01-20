@@ -42,6 +42,8 @@ let wicketFallen = false;
 // Data Storage
 const inning_score = {};
 let overVideos = []; // stores video URLs
+let lastBallVideoURL = null;
+
 
 /* ==========================================================================
    VIDEO RECORDING MODULE
@@ -52,6 +54,15 @@ let chunks = [];
 let isRecording = false;
 let isPaused = false;
 let discard = false;
+
+function blobToBase64(blob) {
+	return new Promise((resolve) => {
+		const reader = new FileReader();
+		reader.onloadend = () => resolve(reader.result);
+		reader.readAsDataURL(blob);
+	});
+}
+
 
 // Init Camera (Back Camera)
 (async () => {
@@ -77,17 +88,19 @@ function startRecording() {
         if (e.data.size) chunks.push(e.data);
     };
 
-    recorder.onstop = () => {
+    recorder.onstop = async () => {
         if (discard) return;
 
         const blob = new Blob(chunks, { type: "video/webm" });
-        const url = URL.createObjectURL(blob);
+        const base64Video = await blobToBase64(blob);
 
-        overVideos.push(url);
+        lastBallVideoURL = base64Video; 
+
+        overVideos.push(base64Video);
 
         // keep only last 6 balls (1 over)
         if (overVideos.length > 6) {
-            URL.revokeObjectURL(overVideos.shift());
+            overVideos.shift();
         }
 
         status.textContent = "Ball recorded";
@@ -318,13 +331,13 @@ function endInning() {
     inningsCompleted++;
 
     // IF BOTH TEAMS HAVE BATTED
-    if (inningsCompleted === 2) {
+    if (inningsCompleted === 2 || inningsCompleted === 1) {
         // Optional: store final scores
         localStorage.setItem("team1", JSON.stringify(team1));
         localStorage.setItem("team2", JSON.stringify(team2));
 
         //STOP EVERYTHING & REDIRECT
-        window.location.href = "matchover.html";
+        window.location.href = "inning-over.html";
         return;
     }
 
@@ -373,8 +386,22 @@ document.querySelectorAll(".square, .circle").forEach(btn => {
         batter.runs += run;
         batter.balls++;
 
-        if (run === 4) batter.fours++;
-        if (run === 6) batter.sixes++;
+        if (run === 4 && lastBallVideoURL) {
+            batter.fours.push({
+                video: lastBallVideoURL,
+                over: players.overs,
+                ball: players.totalballs
+            });
+        }
+
+        if (run === 6 && lastBallVideoURL) {
+            batter.sixes.push({
+                video: lastBallVideoURL,
+                over: players.overs,
+                ball: players.totalballs
+            });
+        }
+
 
         if (run === 1 || run === 3 || players.totalballs % 6 === 0) {
             [strike.innerText, nonstrike.innerText] =
@@ -481,10 +508,13 @@ document.querySelector(".dot-btn")?.addEventListener("click", () => {
 
 // --- Overlay Control ---
 document.querySelector("#cont").addEventListener("click", () => {
-    document.querySelector("#overlay").classList.remove("activey");
-    document.querySelector(".app").classList.remove("lock")
-    overVideos.length = 0;
+	document.querySelector("#overlay").classList.remove("activey");
+	document.querySelector(".app").classList.remove("lock");
+
+	overVideos.length = 0;
+	lastBallVideoURL = null;
 });
+
 
 // --- Preview Button ---
 previewBtn.addEventListener("click", () => {

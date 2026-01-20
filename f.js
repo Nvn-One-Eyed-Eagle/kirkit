@@ -1,23 +1,23 @@
 function createPlayer() {
-  return {
-      runs: 0,
-      balls: 0,
-      sixes: 0,
-      fours: 0,
-      bold: false,
-      get runRate() {
-      return this.balls ? (this.runs / this.balls) * 6 : 0;
-      }
-  };
+    return {
+        runs: 0,
+        balls: 0,
+        fours: [],     // ⬅️ store videos
+        sixes: [],     // ⬅️ store videos
+        bold: false,
+        get runRate() {
+            return this.balls ? (this.runs / this.balls) * 6 : 0;
+        }
+    };
 }
 
 const players = {
-    daya: createPlayer(),
-    vikram: createPlayer(),
-    betal: createPlayer(),
+    amit: createPlayer(),
     mirdul: createPlayer(),
-    kangana : createPlayer(),
-    runout: createPlayer(), // Added for demo fullness
+    mohit: createPlayer(),
+    nitin: createPlayer(),
+    nihal : createPlayer(),
+    piyush: createPlayer(), // Added for demo fullness
 
     totalruns: 0,
     totalballs: 0,
