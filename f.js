@@ -11,6 +11,8 @@ function createPlayer() {
     };
 }
 
+localStorage.setItem("inning", 1)
+
 const players = {
     amit: createPlayer(),
     mirdul: createPlayer(),

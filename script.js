@@ -1,11 +1,10 @@
+
 /* ==========================================================================
    CONFIG & INITIALIZATION
    ========================================================================== */
 const team1 = JSON.parse(localStorage.getItem("team1"));
 const team2 = JSON.parse(localStorage.getItem("team2"));
 const over = JSON.parse(localStorage.getItem("overs"));
-
-const inningsCompleted =localStorage.getItem("innings") || 0;
 
 if (!team1 || !team2) {
     alert("Teams not selected!");
@@ -36,7 +35,7 @@ const abandonBtn = document.getElementById("abandon");
    GAME STATE
    ========================================================================== */
 let players = team1; // ⚠️ MUST BE let (inning switch)
-// let inningsCompleted = 0;
+let inningsCompleted = 0;
 let strikeSet = false;
 let allset = false;
 let wicketFallen = false;
@@ -45,6 +44,7 @@ let wicketFallen = false;
 const inning_score = {};
 let overVideos = []; // stores video URLs
 let lastBallVideoURL = null;
+let inning = localStorage.getItem("inning")
 
 
 /* ==========================================================================
@@ -80,6 +80,25 @@ function blobToBase64(blob) {
         console.error(err);
     }
 })();
+
+function next(){
+  // Reset UI + state for next innings
+  strike.innerText = "";
+  nonstrike.innerText = "";
+  strikeSet = false;
+  allset = false;
+  wicketFallen = false;
+  document.querySelector("#bating").innerText = "Team 2";
+
+  // Switch batting team
+  players = players === team1 ? team2 : team1;
+
+  renderPlayers();
+  update();
+}
+
+if (inning === '2')
+  next()
 
 function startRecording() {
     chunks = [];
@@ -318,10 +337,10 @@ function enableAutoSwitch(container) {
    CORE GAME LOGIC
    ========================================================================== */
 function endInning() {
+    localStorage.setItem("inning", +localStorage.getItem("inning") + 1);
     console.log("Inning Over");
     butts.classList.add("lock");
     document.querySelector("#radialBtn").classList.add("lock")
-    document.querySelector("#bating").innerText = "Team 2";
 
     // Save remaining players' scores
     for (const name in players) {
@@ -337,25 +356,11 @@ function endInning() {
         // Optional: store final scores
         localStorage.setItem("team1", JSON.stringify(team1));
         localStorage.setItem("team2", JSON.stringify(team2));
-        localStorage.setItem("inningsCompleted", JSON.stringify(inningsCompleted))
 
         //STOP EVERYTHING & REDIRECT
         window.location.href = "inning-over.html";
         return;
     }
-
-    // Reset UI + state for next innings
-    strike.innerText = "";
-    nonstrike.innerText = "";
-    strikeSet = false;
-    allset = false;
-    wicketFallen = false;
-
-    // Switch batting team
-    players = players === team1 ? team2 : team1;
-
-    renderPlayers();
-    update();
 }
 
 /* ==========================================================================
