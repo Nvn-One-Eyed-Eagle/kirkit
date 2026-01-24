@@ -337,7 +337,6 @@ function enableAutoSwitch(container) {
    CORE GAME LOGIC
    ========================================================================== */
 function endInning() {
-    localStorage.setItem("inning", +localStorage.getItem("inning") + 1);
     console.log("Inning Over");
     butts.classList.add("lock");
     document.querySelector("#radialBtn").classList.add("lock")
@@ -350,6 +349,9 @@ function endInning() {
     }
 
     inningsCompleted++;
+    b = localStorage.getItem("inning")
+    if (b === '2')
+        localStorage.setItem("end",true)
 
     // IF BOTH TEAMS HAVE BATTED
     if (inningsCompleted === 2 || inningsCompleted === 1) {

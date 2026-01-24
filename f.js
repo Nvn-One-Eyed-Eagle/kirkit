@@ -1,5 +1,6 @@
 const players = JSON.parse(localStorage.getItem("matchData"));
-
+localStorage.setItem("inning",0);
+localStorage.setItem("end",false);
 // Populate Grid
 Object.entries(players).forEach(([name, player]) => {
   if (!player || typeof player !== "object" || !("runs" in player)) return;

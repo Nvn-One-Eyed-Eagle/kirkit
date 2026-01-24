@@ -1,6 +1,14 @@
-const team =
-	JSON.parse(localStorage.getItem("team1")) ||
-	JSON.parse(localStorage.getItem("team2"));
+
+const end = localStorage.getItem("end");
+i = localStorage.getItem("inning");
+
+let team;
+
+if (i === "0") {
+    team = JSON.parse(localStorage.getItem("team1"));
+} else {
+    team = JSON.parse(localStorage.getItem("team2"));
+}
 
 const container = document.getElementById("highlights");
 
@@ -104,10 +112,12 @@ lightbox.onclick = (e) => {
 };
 
 document.querySelector(".continue").addEventListener("click", () => {
-    let check = localStorage.getItem("inning");
-    if (check === '3') {
-        window.location.href = "matchover.html";
-    } else {
-        window.location.href = "match.html";
+    localStorage.setItem("inning",2);
+	if (end === "true"){
+		window.location.href = "matchover.html";
+	    return;
+	}
+		
+    window.location.href = "match.html";
     }
-});
+);

@@ -347,7 +347,7 @@ const initialMatchState = {
 
 document.querySelector("#btn").addEventListener("click", () => {
     senddata();
-    window.location.href = "index.html";
+    window.location.href = "team.html";
 })
 
 

@@ -1,321 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Match Setup</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Showcase</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-<style>
-:root {
-    --primary: #2563eb;
-    --primary-dark: #1e40af;
-    --secondary: #0f172a;
-    --accent: #f59e0b;
-    --bg-grad: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
-    --surface: #ffffff;
-    --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
-    --shadow-md: 0 10px 15px -3px rgba(0,0,0,0.1);
-    --radius-lg: 24px;
-    --radius-md: 16px;
-    --radius-sm: 12px;
-}
-
-* {
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
-}
-
-body {
-    margin: 0;
-    font-family: 'Poppins', sans-serif;
-    background: var(--bg-grad);
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    padding: 16px;
-    color: var(--secondary);
-}
-
-/* MAIN APP CONTAINER */
-.app {
-    width: 100%;
-    max-width: 400px;
-    background: var(--surface);
-    border-radius: var(--radius-lg);
-    padding: 24px 20px;
-    box-shadow: var(--shadow-md);
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - 32px); /* Full height on mobile minus padding */
-    position: relative;
-    overflow: hidden;
-}
-
-/* SECTION HEADERS */
-.section-label {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #94a3b8;
-    font-weight: 700;
-    margin-bottom: 12px;
-    display: block;
-}
-
-/* TOP GRID (PLAYER POOL) */
-.top-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 30px;
-    min-height: 100px;
-    align-content: flex-start;
-}
-
-/* OVERS INPUT BOX */
-.overs-box {
-    background: #f8fafc;
-    border-radius: var(--radius-md);
-    padding: 12px 16px;
-    border: 2px dashed #cbd5e1;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    transition: border-color 0.2s, background 0.2s;
-}
-
-.overs-box:hover {
-    border-color: var(--primary);
-    background: #eff6ff;
-}
-
-.overs-box label {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--secondary);
-}
-
-.overs-box input {
-    width: 80px;
-    padding: 8px 10px;
-    border-radius: 12px;
-    border: 1px solid #cbd5e1;
-    font-size: 14px;
-    font-weight: 600;
-    text-align: center;
-    outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.overs-box input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-}
-
-
-
-.grid-box {
-    padding: 10px 16px;
-    background: #f1f5f9;
-    border: 1px solid #e2e8f0;
-    border-radius: 50px; /* Pill shape */
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--secondary);
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    user-select: none;
-    box-shadow: var(--shadow-sm);
-}
-
-.grid-box:active {
-    transform: scale(0.95);
-}
-
-/* State: When selected */
-.grid-box.selected {
-    opacity: 0.4;
-    background: #e2e8f0;
-    color: #94a3b8;
-    box-shadow: none;
-    pointer-events: none; /* Prevent double clicking */
-    transform: scale(0.95);
-}
-
-/* MIDDLE SECTION (TEAMS) */
-.middle {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    flex: 1; /* Takes up remaining space */
-    overflow-y: auto; /* Allow scrolling if list gets long */
-    padding-bottom: 80px; /* Space for button */
-}
-
-/* TEAM CARD STYLING */
-.team-container {
-    background: #f8fafc;
-    border-radius: var(--radius-md);
-    padding: 12px;
-    border: 2px dashed #cbd5e1; /* Dashed border implies "fill me" */
-    transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
-}
-
-/* Active team indication (Optional visual flare) */
-.team-container:hover {
-    border-color: var(--primary);
-    background: #eff6ff;
-}
-
-.team-title {
-    text-align: center;
-    font-weight: 700;
-    font-size: 14px;
-    color: var(--primary);
-    margin-bottom: 12px;
-    text-transform: uppercase;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-/* ROW INSIDE TEAM */
-.team-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-    background: var(--surface);
-    padding: 6px 8px 6px 6px;
-    border-radius: var(--radius-sm);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    cursor: pointer;
-}
-
-@keyframes popIn {
-    from { opacity: 0; transform: scale(0.8) translateY(10px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-.circle {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    font-weight: bold;
-    flex-shrink: 0;
-}
-
-/* Using the circle to show initial */
-.circle::after {
-    content: ''; /* JS could inject initial here, keeping empty for now */
-}
-
-.rect {
-    flex: 1;
-    font-size: 12px;
-    font-weight: 600;
-    color: #334155;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    /* Removed border/bg from rect to make it cleaner */
-    background: transparent;
-    border: none;
-    padding: 0;
-}
-
-/* Remove Icon (Implicit) */
-.team-row::after {
-    content: '×';
-    font-size: 18px;
-    color: #ef4444;
-    font-weight: bold;
-    margin-left: 4px;
-    opacity: 0.5;
-}
-.team-row:hover::after { opacity: 1; }
-
-/* GO BUTTON */
-.go-btn {
-    position: absolute;
-    bottom: 24px;
-    left: 20px;
-    right: 20px;
-    height: 56px;
-    border-radius: 50px;
-    background: var(--secondary);
-    color: #fff;
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.25);
-    cursor: pointer;
-    transition: transform 0.2s, background 0.2s;
-    border: none;
-    text-transform: uppercase;
-}
-
-.go-btn:active {
-    transform: scale(0.96);
-    background: #000;
-}
-
-/* RESPONSIVE TWEAKS */
-@media(max-height: 600px) {
-    .app { height: 100vh; border-radius: 0; }
-}
-</style>
+    <style>
+        /* Smooth transitions for the card stack effect */
+        .card-transition {
+            transition-property: all;
+            transition-duration: 500ms;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Custom scrollbar hiding */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
 </head>
+<body class="min-h-screen bg-gradient-to-br from-green-900 via-blue-900 to-purple-900 font-sans">
 
-<body>
-
-<div class="app">
-
-    <span class="section-label">Available Players</span>
-    <div class="top-grid"></div>
-
-    <span class="section-label">Match Settings</span>
-
-    <div class="overs-box">
-    <label for="oversInput">Overs</label>
-    <input
-        type="number"
-        id="oversInput"
-        min="1"
-        max="50"
-        placeholder="e.g. 5"
-    />
+    <div class="bg-gradient-to-r from-orange-500 to-red-600 py-6 px-4 shadow-2xl">
+        <h1 class="text-4xl md:text-5xl font-black text-white text-center tracking-wider">
+            🏏 CRICKET LEGENDS
+        </h1>
     </div>
 
-    <span class="section-label">Team Formation</span>
-    <div class="middle">
-        <div class="team-container team-1">
-            <div class="team-title">Team A</div>
-        </div>
+    <div class="py-8 px-4">
+        <h2 class="text-3xl font-bold text-white text-center mb-6 flex items-center justify-center gap-2">
+            <i data-lucide="trophy" class="text-yellow-400 w-8 h-8"></i>
+            PLAYER STATS
+        </h2>
+        
+        <div class="relative max-w-md mx-auto">
+            <div id="cards-container" class="relative h-[500px]">
+                </div>
 
-        <div class="team-container team-2">
-            <div class="team-title">Team B</div>
+            <button id="prev-btn" class="absolute left-0 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-4 rounded-full shadow-xl z-40 transition-all active:scale-90 cursor-pointer">
+                <i data-lucide="chevron-left" class="text-gray-800 w-7 h-7"></i>
+            </button>
+            <button id="next-btn" class="absolute right-0 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-4 rounded-full shadow-xl z-40 transition-all active:scale-90 cursor-pointer">
+                <i data-lucide="chevron-right" class="text-gray-800 w-7 h-7"></i>
+            </button>
+
+            <div id="dots-container" class="flex justify-center gap-2 mt-8">
+                </div>
         </div>
     </div>
 
-    <div class="go-btn">Start Match</div>
+    <div class="py-8 px-4 bg-black/30">
+        <h2 class="text-3xl font-bold text-white text-center mb-6">
+            🎥 HIGHLIGHT REELS
+        </h2>
 
-</div>
+        <div class="flex justify-center gap-4 mb-6">
+            <button id="tab-fours" onclick="switchTab('fours')" class="px-6 py-3 rounded-full font-bold transition-all bg-yellow-400 text-black scale-110">
+                4️⃣ FOURS
+            </button>
+            <button id="tab-sixes" onclick="switchTab('sixes')" class="px-6 py-3 rounded-full font-bold transition-all bg-white/20 text-white hover:bg-white/30">
+                6️⃣ SIXES
+            </button>
+        </div>
 
+        <div id="video-grid" class="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-3 gap-4">
+            </div>
+    </div>
+
+    <div class="py-8 px-4">
+        <div class="max-w-md mx-auto">
+            
+            <button id="show-add-btn" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-2">
+                <i data-lucide="plus" class="w-6 h-6"></i>
+                ADD NEW PLAYER
+            </button>
+
+            <div id="add-player-form" class="hidden bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-2xl">
+                <h3 class="text-2xl font-bold text-white mb-4 text-center">
+                    Add New Player
+                </h3>
+                
+                <div class="space-y-4">
+                    <input type="text" id="inp-name" placeholder="Player Name" class="w-full px-4 py-3 rounded-xl bg-white/90 focus:bg-white outline-none focus:ring-2 focus:ring-yellow-400">
+                    <input type="url" id="inp-image" placeholder="Image URL" class="w-full px-4 py-3 rounded-xl bg-white/90 focus:bg-white outline-none focus:ring-2 focus:ring-yellow-400">
+                    <input type="number" id="inp-matches" placeholder="Total Matches" class="w-full px-4 py-3 rounded-xl bg-white/90 focus:bg-white outline-none focus:ring-2 focus:ring-yellow-400">
+                    <input type="number" id="inp-runs" placeholder="Total Runs" class="w-full px-4 py-3 rounded-xl bg-white/90 focus:bg-white outline-none focus:ring-2 focus:ring-yellow-400">
+                    <input type="number" id="inp-highscore" placeholder="High Score" class="w-full px-4 py-3 rounded-xl bg-white/90 focus:bg-white outline-none focus:ring-2 focus:ring-yellow-400">
+                    <input type="number" step="0.01" id="inp-average" placeholder="Batting Average" class="w-full px-4 py-3 rounded-xl bg-white/90 focus:bg-white outline-none focus:ring-2 focus:ring-yellow-400">
+                </div>
+
+                <div class="flex gap-3 mt-6">
+                    <button id="cancel-add-btn" class="flex-1 bg-gray-500 text-white py-3 rounded-xl font-bold hover:bg-gray-600 transition-all">
+                        Cancel
+                    </button>
+                    <button id="submit-add-btn" class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-xl font-bold hover:shadow-xl transition-all">
+                        Add Player
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="py-12 px-4">
+        <div class="max-w-md mx-auto">
+            <button  id="btn" class="w-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 text-white py-6 rounded-3xl font-black text-3xl shadow-2xl hover:shadow-3xl transition-all active:scale-95 hover:scale-105 animate-pulse">
+                🚀 START
+            </button>
+        </div>
+    </div>
+
+    <div id="video-modal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 hidden" onclick="closeVideoModal()">
+        <div class="bg-white rounded-2xl p-4 max-w-lg w-full" onclick="event.stopPropagation()">
+            <img id="modal-image" src="" alt="Thumbnail" class="w-full h-64 object-cover rounded-xl">
+            <h3 id="modal-title" class="text-xl font-bold mt-4 text-center"></h3>
+            <button onclick="closeVideoModal()" class="w-full mt-4 bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 cursor-pointer">
+                Close
+            </button>
+        </div>
+    </div>
+
+<script src="index.js"></script>
 </body>
 </html>
-
-<script src="f.js"></script>
