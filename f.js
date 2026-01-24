@@ -1,31 +1,4 @@
-function createPlayer() {
-    return {
-        runs: 0,
-        balls: 0,
-        fours: [],     // ⬅️ store videos
-        sixes: [],     // ⬅️ store videos
-        bold: false,
-        get runRate() {
-            return this.balls ? (this.runs / this.balls) * 6 : 0;
-        }
-    };
-}
-
-localStorage.setItem("inning", 1)
-
-const players = {
-    amit: createPlayer(),
-    mirdul: createPlayer(),
-    mohit: createPlayer(),
-    nitin: createPlayer(),
-    nihal : createPlayer(),
-    piyush: createPlayer(), // Added for demo fullness
-
-    totalruns: 0,
-    totalballs: 0,
-    overs: 0,
-    wicket: 0
-};
+const players = JSON.parse(localStorage.getItem("matchData"));
 
 // Populate Grid
 Object.entries(players).forEach(([name, player]) => {
