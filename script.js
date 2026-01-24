@@ -439,6 +439,8 @@ document.querySelectorAll(".square, .circle").forEach(btn => {
 
 // --- Scoring: Wicket Button ---
 document.querySelector(".bold-btn").addEventListener("click", () => {
+    if (!allset) return;
+
     const outPlayer = strike.innerText;
 
     players.wicket++;
@@ -447,36 +449,45 @@ document.querySelector(".bold-btn").addEventListener("click", () => {
     players[outPlayer].bold = true;
 
     stop.classList.add("lock");
-    update();
 
-    finalizeOutPlayer();
+    finalizeOutPlayer(); // ✅ REMOVE PLAYER FIRST
+
+    const isOverEnd = players.totalballs % 6 === 0;
+
     if (isAllOut()) {
         endInning();
         return;
     }
 
-    const remaining = getAvailableBatsmen();
+    if (isOverEnd) {
+        players.overs++;
 
-    if (remaining.length === 1 && remaining[0] === nonstrike.innerText) {
-        strike.innerText = nonstrike.innerText;
-        nonstrike.innerText = "";
-        wicketFallen = false;
-        stop.classList.remove("lock");
-        butts.classList.add("lock");
-        document.querySelector("#radialBtn").classList.add("lock")
-        document.querySelector(".display").classList.remove("lock");
+        document.querySelector("#overlay").classList.add("activey");
+        document.querySelector(".app").classList.add("lock");
+
+        renderOverStats(players);
+
+        if (players.overs === over) {
+            endInning();
+            return;
+        }
+
         update();
-        return;
+        return; // 🔑 STOP HERE
     }
 
+    // Normal wicket flow (not 6th ball)
     wicketFallen = true;
     strike.innerText = "Select...";
     renderPlayers();
+
     butts.classList.add("lock");
-    document.querySelector("#radialBtn").classList.add("lock")
+    document.querySelector("#radialBtn").classList.add("lock");
     document.querySelector(".display").classList.remove("lock");
+
     update();
 });
+
 
 // --- Game Control: Stop Button ---
 stop.addEventListener("click", () => {
