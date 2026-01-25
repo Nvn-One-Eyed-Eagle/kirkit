@@ -254,8 +254,8 @@ lightbox.onclick = (e) => {
 document.querySelector(".continue").addEventListener("click", () => {
     localStorage.setItem("inning", 2);
     if (end === "true") {
-        window.location.href = "matchover.html";
+        window.location.href = "pages/matchover.html";
         return;
     }
-    window.location.href = "match.html";
+    window.location.href = "pages/match.html";
 });
