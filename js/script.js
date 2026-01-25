@@ -360,7 +360,7 @@ function endInning() {
         localStorage.setItem("team2", JSON.stringify(team2));
 
         //STOP EVERYTHING & REDIRECT
-        window.location.href = "pages/inning-over.html";
+        window.location.href = "inning-over.html";
         return;
     }
 }

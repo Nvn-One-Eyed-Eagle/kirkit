@@ -105,7 +105,7 @@ goBtn.addEventListener("click", () => {
   document.querySelectorAll(".grid-box").forEach(el => {
     el.style.pointerEvents = "none";
 
-  window.location.href = "pages/match.html"
+  window.location.href = "match.html"
   });
   
   // Disable removing players
