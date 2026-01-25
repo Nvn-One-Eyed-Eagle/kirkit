@@ -1,3 +1,20 @@
+function safePlay(video) {
+    if (!video) return;
+    video.muted = true;
+    video.currentTime = 0;
+    const p = video.play();
+    if (p !== undefined) p.catch(() => {});
+}
+
+
+function safePause(video) {
+    if (!video) return;
+    video.pause();
+}
+
+
+
+
 const end = localStorage.getItem("end");
 let i = localStorage.getItem("inning");
 
@@ -65,10 +82,12 @@ Object.entries(team).forEach(([name, player]) => {
         vid.muted = true;
         vid.loop = true;
         vid.playsInline = true;
+		vid.setAttribute("webkit-playsinline", "");
+        vid.preload = "metadata";
+
         
         if (idx === 0) {
             vid.autoplay = true;
-            vid.play();
         }
 
         const overlay = document.createElement("div");
@@ -122,57 +141,27 @@ Object.entries(team).forEach(([name, player]) => {
     const dots = dotsContainer.querySelectorAll(".dot");
 
     function updateCarousel(index) {
-        const totalCards = cards.length;
-        const angleStep = 360 / totalCards;
-        
-        cards.forEach((card, i) => {
-            const offset = (i - index + totalCards) % totalCards;
-            let angle, translateZ, scale, opacity;
+    cards.forEach((card, i) => {
+        const video = card.querySelector("video");
 
-            if (offset === 0) {
-                // Active card - front and center
-                angle = 0;
-                translateZ = 150;
-                scale = 1;
-                opacity = 1;
-                card.classList.add("active");
-                const video = card.querySelector("video");
-                video.play();
-            } else if (offset === 1 || offset === totalCards - 1) {
-                // Adjacent cards - visible but smaller
-                angle = offset === 1 ? 25 : -25;
-                translateZ = 0;
-                scale = 0.75;
-                opacity = 0.5;
-                card.classList.remove("active");
-                const video = card.querySelector("video");
-                video.pause();
-            } else {
-                // Hidden cards
-                angle = offset * angleStep;
-                translateZ = -100;
-                scale = 0.5;
-                opacity = 0;
-                card.classList.remove("active");
-                const video = card.querySelector("video");
-                video.pause();
-            }
+        if (i === index) {
+            card.classList.add("active");
+            card.style.opacity = "1";
+            card.style.transform = "translate(-50%, -50%) scale(1)";
+            safePlay(video);
+        } else {
+            card.classList.remove("active");
+            card.style.opacity = "0";
+            card.style.transform = "translate(-50%, -50%) scale(0.7)";
+            safePause(video);
+        }
+    });
 
-            card.style.transform = `
-                translate(-50%, -50%)
-                rotateY(${angle}deg)
-                translateZ(${translateZ}px)
-                scale(${scale})
-            `;
-            card.style.opacity = opacity;
-            card.style.zIndex = offset === 0 ? 10 : (5 - Math.abs(offset));
-        });
+    dots.forEach((dot, i) => {
+        dot.classList.toggle("active", i === index);
+    });
+}
 
-        // Update dots
-        dots.forEach((dot, i) => {
-            dot.classList.toggle("active", i === index);
-        });
-    }
 
     function startProgress() {
         let progress = 0;
@@ -202,10 +191,15 @@ Object.entries(team).forEach(([name, player]) => {
         startProgress();
     }
 
-    function startAutoPlay() {
-        autoPlayInterval = setInterval(nextSlide, SLIDE_DURATION);
-        startProgress();
-    }
+	function startAutoPlay() {
+		clearInterval(autoPlayInterval);
+		autoPlayInterval = setInterval(() => {
+			currentIndex = (currentIndex + 1) % cards.length;
+			updateCarousel(currentIndex);
+			startProgress();
+		}, SLIDE_DURATION);
+	}
+
 
     function resetAutoPlay() {
         clearInterval(autoPlayInterval);
@@ -217,14 +211,15 @@ Object.entries(team).forEach(([name, player]) => {
     startAutoPlay();
 
     // Pause on interaction
-    carouselContainer.addEventListener("touchstart", () => {
-        clearInterval(autoPlayInterval);
-        clearInterval(progressInterval);
-    });
+	carouselContainer.addEventListener("touchstart", () => {
+		clearInterval(autoPlayInterval);
+		clearInterval(progressInterval);
+	});
 
-    carouselContainer.addEventListener("touchend", () => {
-        resetAutoPlay();
-    });
+	carouselContainer.addEventListener("touchend", () => {
+		startAutoPlay();
+	});
+
 });
 
 // Show empty state if no highlights
@@ -240,9 +235,11 @@ const closeBtn = document.getElementById("closeBtn");
 
 function openLightbox(src) {
     lightboxVideo.src = src;
+    lightboxVideo.muted = false;
     lightbox.classList.add("active");
-    lightboxVideo.play();
+    lightboxVideo.play().catch(() => {});
 }
+
 
 closeBtn.onclick = () => {
     lightbox.classList.remove("active");
