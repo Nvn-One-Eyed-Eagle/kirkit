@@ -258,44 +258,98 @@ cancelAddBtn.addEventListener('click', () => {
 });
 
 function clearForm() {
-    document.querySelectorAll('#add-player-form input').forEach(inp => inp.value = '');
+    document.getElementById('inp-name').value = '';
+    capturedImage = null;
+
+    photoPreview.src = '';
+    photoPreview.classList.add("hidden");
+    cameraText.classList.remove("hidden");
+
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
 }
+
+
+const cameraBox = document.getElementById("camera-box");
+const video = document.getElementById("camera");
+const photoPreview = document.getElementById("photo-preview");
+const cameraText = document.getElementById("camera-text");
+const captureBtn = document.getElementById("capture-btn");
+
+let stream;
+let capturedImage = null;
+
+cameraBox.addEventListener("click", async () => {
+    if (stream) return;
+
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "user" },
+            audio: false
+        });
+
+        video.srcObject = stream;
+        video.classList.remove("hidden");
+        cameraText.classList.add("hidden");
+        captureBtn.classList.remove("hidden");
+
+    } catch (err) {
+        alert("Camera access denied");
+    }
+});
+
+captureBtn.addEventListener("click", () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
+
+    capturedImage = canvas.toDataURL("image/png");
+
+    photoPreview.src = capturedImage;
+    photoPreview.classList.remove("hidden");
+    video.classList.add("hidden");
+    captureBtn.classList.add("hidden");
+
+    // Stop camera
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+});
+
 
 submitAddBtn.addEventListener('click', () => {
     const name = document.getElementById('inp-name').value;
-    const image = document.getElementById('inp-image').value;
-    const matches = document.getElementById('inp-matches').value;
-    const runs = document.getElementById('inp-runs').value;
-    const highScore = document.getElementById('inp-highscore').value;
-    const average = document.getElementById('inp-average').value;
 
-    if (!name || !image || !matches || !runs || !highScore || !average) {
-        alert('Please fill all fields');
+    if (!name || !capturedImage) {
+        alert('Please enter name and capture image');
         return;
     }
 
     const newPlayer = {
         name,
-        image,
-        matches: parseInt(matches),
-        runs: parseInt(runs),
-        highScore: parseInt(highScore),
-        average: parseFloat(average),
-        fours: [], // Empty arrays for new players as per prompt
+        image: capturedImage, // real camera image
+        matches: 0,
+        runs: 0,
+        highScore: 0,
+        average: 0,
+        fours: [],
         sixes: []
     };
 
     players.push(newPlayer);
-    
-    // Close form and update UI
+
     addPlayerForm.classList.add('hidden');
     showAddBtn.classList.remove('hidden');
     clearForm();
-    
-    // Reset timer so it doesn't jump immediately after add
+
     resetTimer();
     renderUI();
 });
+
 
 // Navigation Buttons
 document.getElementById('next-btn').addEventListener('click', () => {

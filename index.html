@@ -25,9 +25,13 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+        html, body {
+        width: 100%;
+        overflow-x: hidden;
+    }
     </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-green-900 via-blue-900 to-purple-900 font-sans">
+<body class="min-h-screen bg-gradient-to-br from-green-900 via-blue-900 to-purple-900 font-sans overflow-x-hidden">
 
     <div class="bg-gradient-to-r from-orange-500 to-red-600 py-6 px-4 shadow-2xl">
         <h1 class="text-4xl md:text-5xl font-black text-white text-center tracking-wider">
@@ -88,14 +92,33 @@
                     Add New Player
                 </h3>
                 
-                <div class="space-y-4">
+                <!-- <div class="space-y-4">
                     <input type="text" id="inp-name" placeholder="Player Name" class="w-full px-4 py-3 rounded-xl bg-white/90 focus:bg-white outline-none focus:ring-2 focus:ring-yellow-400">
                     <input type="url" id="inp-image" placeholder="Image URL" class="w-full px-4 py-3 rounded-xl bg-white/90 focus:bg-white outline-none focus:ring-2 focus:ring-yellow-400">
-                    <input type="number" id="inp-matches" placeholder="Total Matches" class="w-full px-4 py-3 rounded-xl bg-white/90 focus:bg-white outline-none focus:ring-2 focus:ring-yellow-400">
-                    <input type="number" id="inp-runs" placeholder="Total Runs" class="w-full px-4 py-3 rounded-xl bg-white/90 focus:bg-white outline-none focus:ring-2 focus:ring-yellow-400">
-                    <input type="number" id="inp-highscore" placeholder="High Score" class="w-full px-4 py-3 rounded-xl bg-white/90 focus:bg-white outline-none focus:ring-2 focus:ring-yellow-400">
-                    <input type="number" step="0.01" id="inp-average" placeholder="Batting Average" class="w-full px-4 py-3 rounded-xl bg-white/90 focus:bg-white outline-none focus:ring-2 focus:ring-yellow-400">
+                </div> -->
+                <div class="space-y-4">
+
+                    <input type="text" id="inp-name" placeholder="Player Name"
+                        class="w-full px-4 py-3 rounded-xl bg-white/90 focus:bg-white outline-none focus:ring-2 focus:ring-yellow-400">
+
+                    <!-- Camera preview -->
+                    <div class="relative w-full h-48 rounded-xl overflow-hidden bg-black cursor-pointer" id="camera-box">
+                        <video id="camera" autoplay playsinline class="w-full h-full object-cover hidden"></video>
+                        <img id="photo-preview" class="w-full h-full object-cover hidden">
+                        <div id="camera-text" class="absolute inset-0 flex items-center justify-center text-white">
+                            Click to open camera
+                        </div>
+                    </div>
+
+                    <button type="button" id="capture-btn"
+                        class="hidden w-full py-2 rounded-xl bg-yellow-400 font-semibold">
+                        Capture Photo
+                    </button>
+
                 </div>
+
+
+
 
                 <div class="flex gap-3 mt-6">
                     <button id="cancel-add-btn" class="flex-1 bg-gray-500 text-white py-3 rounded-xl font-bold hover:bg-gray-600 transition-all">

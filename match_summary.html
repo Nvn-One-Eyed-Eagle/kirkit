@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Match Summary - Team Stats & Highlights</title>
+    <link rel="stylesheet" href="end.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-brand">🏏 CricStats</div>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="#about">About Me</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1>🏏 MATCH SUMMARY 🏏</h1>
+            <div class="match-info" id="matchInfo"></div>
+        </div>
+
+        <!-- Team Switcher Tabs -->
+        <div class="team-switcher">
+            <button class="team-tab active" data-team="0">TEAM 1</button>
+            <button class="team-tab" data-team="1">TEAM 2</button>
+        </div>
+
+        <div class="teams-section" id="teamsSection">
+            <div class="teams-wrapper" id="teamsWrapper"></div>
+        </div>
+    </div>
+    <script src="end.js"></script>
+</body>
+</html>
