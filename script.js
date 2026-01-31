@@ -14,6 +14,8 @@ if (!team1 || !team2) {
    DOM ELEMENTS
    ========================================================================== */
 // --- Game UI Elements ---
+
+
 const strike = document.querySelector(".player-box");
 const nonstrike = document.querySelector(".nstrike");
 const infoContainer = document.getElementById("infoContainer");
@@ -23,6 +25,8 @@ const info = document.querySelector("#wic");
 const oinfo = document.querySelector("#otherinfo");
 const previewBtn = document.getElementById("previewBtn");
 const previewVideos = document.getElementById("previewVideos");
+
+const outPlayers = {}; // stores players who got out
 
 // --- Camera/Video UI Elements ---
 const video = document.getElementById("camera");
@@ -174,9 +178,12 @@ function abandonRecording() {
    ========================================================================== */
 function getAvailableBatsmen() {
     return Object.keys(players).filter(
-        p => typeof players[p] === "object"
+        p =>
+            typeof players[p] === "object" &&
+            !players[p].bold   // ❗ hide out players
     );
 }
+
 
 function isAllOut() {
     return getAvailableBatsmen().length === 0;
@@ -192,8 +199,8 @@ function finalizeOutPlayer() {
     for (const name in players) {
         const p = players[name];
         if (p?.bold) {
+            outPlayers[name] = p;
             inning_score[name] = p;
-            delete players[name];
         }
     }
 }
@@ -451,6 +458,24 @@ document.querySelector(".bold-btn").addEventListener("click", () => {
     stop.classList.add("lock");
 
     finalizeOutPlayer(); // ✅ REMOVE PLAYER FIRST
+
+    
+    const remaining = getAvailableBatsmen();
+
+    // 🟢 ONLY ONE BATSMAN LEFT → auto strike
+    if (remaining.length === 1) {
+        strike.innerText = remaining[0];
+        nonstrike.innerText = "";
+        allset = true;
+        wicketFallen = false;
+        update();
+    }
+
+    // 🔴 NO BATSMAN LEFT → inning over
+    if (remaining.length === 0) {
+        endInning();
+        return;
+    }
 
     const isOverEnd = players.totalballs % 6 === 0;
 
