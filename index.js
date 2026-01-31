@@ -4,75 +4,26 @@ let currentCard = 0;
 let activeTab = 'fours'; // 'fours' or 'sixes'
 let autoPlayTimer;
 
+
+function playVideo(src) {
+    const modal = document.getElementById("video-modal");
+    modal.innerHTML = `
+      <video src="${src}" controls autoplay class="w-full rounded-xl"></video>
+    `;
+    modal.classList.remove("hidden");
+}
+
 // Data Source
-const players = [
-    {
-        name: "Mirdul",
-        image: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=400",
-        matches: 0,
-        runs: 0,
-        highScore: 0,
-        average: 0,
-        fours: [
-            { id: 1, thumbnail: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=300", title: "Cover Drive vs Australia" },
-            { id: 2, thumbnail: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=300", title: "Flick Shot vs England" }
-        ],
-        sixes: [
-            { id: 1, thumbnail: "https://images.unsplash.com/photo-1512719994953-eabf50895df7?w=300", title: "Pull Shot vs Pakistan" },
-            { id: 2, thumbnail: "https://images.unsplash.com/photo-1589487391730-58f20eb2c308?w=300", title: "Straight Six vs SA" }
-        ]
-    },
-    {
-        name: "Amit",
-        image: "https://images.unsplash.com/photo-1546608235-3310a2494cdf?w=400",
-        matches: 0,
-        runs: 0,
-        highScore: 0,
-        average: 0,
-        fours: [
-            { id: 1, thumbnail: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=300", title: "Square Cut vs WI" },
-            { id: 2, thumbnail: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=300", title: "Drive vs NZ" }
-        ],
-        sixes: [
-            { id: 1, thumbnail: "https://images.unsplash.com/photo-1512719994953-eabf50895df7?w=300", title: "Hook Shot vs Aus" },
-            { id: 2, thumbnail: "https://images.unsplash.com/photo-1589487391730-58f20eb2c308?w=300", title: "Lofted Drive vs Eng" }
-        ]
-    },
-    {
-        name: "Mohit",
-        image: "https://images.unsplash.com/photo-1551958219-acbc608c6377?w=400",
-        matches: 0,
-        runs: 0,
-        highScore: 0,
-        average: 0,
-        fours: [
-            { id: 1, thumbnail: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=300", title: "Helicopter Shot vs Pak" },
-            { id: 2, thumbnail: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=300", title: "Flick vs SL" }
-        ],
-        sixes: [
-            { id: 1, thumbnail: "https://images.unsplash.com/photo-1512719994953-eabf50895df7?w=300", title: "Winning Six 2011 WC" },
-            { id: 2, thumbnail: "https://images.unsplash.com/photo-1589487391730-58f20eb2c308?w=300", title: "Helicopter Six vs Aus" }
-        ]
-    },
+function loadPlayers() {
+    const db = JSON.parse(localStorage.getItem("playersDB")) || {};
+    return Object.values(db).map(p => ({
+        ...p,
+        average: p.balls ? (p.runs / p.balls * 6).toFixed(2) : 0
+    }));
+}
 
-    {
-        name: "Nitin",
-        image: "https://images.unsplash.com/photo-1551958219-acbc608c6377?w=400",
-        matches: 0,
-        runs: 0,
-        highScore: 0,
-        average: 0,
-        fours: [
-            { id: 1, thumbnail: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=300", title: "Helicopter Shot vs Pak" },
-            { id: 2, thumbnail: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=300", title: "Flick vs SL" }
-        ],
-        sixes: [
-            { id: 1, thumbnail: "https://images.unsplash.com/photo-1512719994953-eabf50895df7?w=300", title: "Winning Six 2011 WC" },
-            { id: 2, thumbnail: "https://images.unsplash.com/photo-1589487391730-58f20eb2c308?w=300", title: "Helicopter Six vs Aus" }
-        ]
-    }
+let players = loadPlayers();
 
-];
 
 // --- Render Functions ---
 
@@ -202,24 +153,20 @@ function renderVideos() {
         tabSixes.className = 'px-6 py-3 rounded-full font-bold transition-all bg-yellow-400 text-black scale-110';
     }
 
-    const videos = currentPlayer[activeTab] || [];
-    
-    videos.forEach(video => {
-        const html = `
-            <div class="relative group cursor-pointer" onclick="openVideoModal('${video.thumbnail}', '${video.title}')">
-                <div class="relative rounded-xl overflow-hidden shadow-lg transform transition-transform group-hover:scale-105">
-                    <img src="${video.thumbnail}" alt="${video.title}" class="w-full h-32 object-cover">
-                    <div class="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-all flex items-center justify-center">
-                        <div class="bg-white/90 rounded-full p-3">
-                            <i data-lucide="play" class="w-6 h-6 text-red-600 fill-red-600"></i>
-                        </div>
-                    </div>
-                </div>
-                <p class="text-white text-xs mt-2 text-center font-medium">${video.title}</p>
-            </div>
+    const videos = currentPlayer[activeTab];
+
+    videos.forEach((v, i) => {
+        videoGrid.innerHTML += `
+        <div onclick="playVideo('${v.video}')"
+            class="bg-black rounded-xl p-2 cursor-pointer">
+            <video src="${v.video}" class="w-full h-32 object-cover rounded"></video>
+            <p class="text-white text-xs text-center mt-1">
+            Over ${v.over}.${v.ball}
+            </p>
+        </div>
         `;
-        videoGrid.innerHTML += html;
     });
+
 }
 
 // --- Logic & Event Handlers ---
@@ -386,6 +333,7 @@ function closeVideoModal() {
 
 // Initialization
 window.addEventListener('DOMContentLoaded', () => {
+    players = loadPlayers(); 
     renderUI();
     startTimer();
 });

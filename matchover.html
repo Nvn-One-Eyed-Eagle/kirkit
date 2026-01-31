@@ -543,6 +543,45 @@ function getPlayers(team) {
     .sort((a, b) => b[1].runs - a[1].runs);
 }
 
+function updatePlayersFromMatch() {
+    const team1 = JSON.parse(localStorage.getItem("team1"));
+    const team2 = JSON.parse(localStorage.getItem("team2"));
+
+    let db = JSON.parse(localStorage.getItem("playersDB")) || {};
+
+    [team1, team2].forEach(team => {
+        Object.keys(team).forEach(key => {
+            if (["overs","totalruns","totalballs","wicket"].includes(key)) return;
+
+            const p = team[key];
+
+            if (!db[key]) {
+                db[key] = {
+                    name: key.charAt(0).toUpperCase() + key.slice(1),
+                    image: p.image || "",
+                    matches: 0,
+                    runs: 0,
+                    balls: 0,
+                    highScore: 0,
+                    fours: [],
+                    sixes: []
+                };
+            }
+
+            db[key].matches += 1;
+            db[key].runs += p.runs;
+            db[key].balls += p.balls;
+            db[key].highScore = Math.max(db[key].highScore, p.runs);
+
+            db[key].fours.push(...p.fours);
+            db[key].sixes.push(...p.sixes);
+        });
+    });
+
+    localStorage.setItem("playersDB", JSON.stringify(db));
+}
+
+
 /* ===== DETERMINE WINNER ===== */
 const winner = team1.totalruns > team2.totalruns ? team1 : team2;
 const loser = winner === team1 ? team2 : team1;
@@ -606,6 +645,7 @@ document.getElementById("mvpCard").innerHTML = `
     </div>
   </div>
 `;
+updatePlayersFromMatch()
 </script>
 </body>
 </html>
