@@ -1,5 +1,77 @@
 /* ==========================================================================
-   highlights.js — resolves IndexedDB video IDs before rendering
+   VideoDB — IndexedDB wrapper (inlined)
+   ========================================================================== */
+const VideoDB = (() => {
+    const DB_NAME = "cricketVideos";
+    const STORE  = "videos";
+    const VERSION = 1;
+    let db = null;
+
+    function getDB() {
+        if (db) return Promise.resolve(db);
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, VERSION);
+            req.onupgradeneeded = (e) => {
+                const database = e.target.result;
+                if (!database.objectStoreNames.contains(STORE)) {
+                    database.createObjectStore(STORE);
+                }
+            };
+            req.onsuccess  = (e) => { db = e.target.result; resolve(db); };
+            req.onerror    = (e) => reject(e.target.error);
+        });
+    }
+
+    async function save(base64Video) {
+        const database = await getDB();
+        const id = "vid_" + Date.now() + "_" + Math.random().toString(36).slice(2, 9);
+        return new Promise((resolve, reject) => {
+            const tx   = database.transaction(STORE, "readwrite");
+            const store = tx.objectStore(STORE);
+            const req  = store.put(base64Video, id);
+            req.onsuccess = () => resolve(id);
+            req.onerror   = (e) => reject(e.target.error);
+        });
+    }
+
+    async function get(id) {
+        const database = await getDB();
+        return new Promise((resolve, reject) => {
+            const tx   = database.transaction(STORE, "readonly");
+            const store = tx.objectStore(STORE);
+            const req  = store.get(id);
+            req.onsuccess = (e) => resolve(e.target.result || null);
+            req.onerror   = (e) => reject(e.target.error);
+        });
+    }
+
+    async function remove(id) {
+        const database = await getDB();
+        return new Promise((resolve, reject) => {
+            const tx   = database.transaction(STORE, "readwrite");
+            const store = tx.objectStore(STORE);
+            const req  = store.delete(id);
+            req.onsuccess = () => resolve();
+            req.onerror   = (e) => reject(e.target.error);
+        });
+    }
+
+    async function clear() {
+        const database = await getDB();
+        return new Promise((resolve, reject) => {
+            const tx   = database.transaction(STORE, "readwrite");
+            const store = tx.objectStore(STORE);
+            const req  = store.clear();
+            req.onsuccess = () => resolve();
+            req.onerror   = (e) => reject(e.target.error);
+        });
+    }
+
+    return { save, get, remove, clear };
+})();
+
+/* ==========================================================================
+   highlights / inning-over.js
    ========================================================================== */
 
 function safePlay(video) {
@@ -16,35 +88,55 @@ function safePause(video) {
 }
 
 const end = localStorage.getItem("end");
-let i = localStorage.getItem("inning");
+const inning = localStorage.getItem("inning"); // "0", "2", or null
+
+// ✅ FIX: pick the team that JUST batted
+// First inning  → inning is "0" or null → team1 batted
+// Second inning → inning is "2"         → team2 batted
+const team1 = JSON.parse(localStorage.getItem("team1"));
+const team2 = JSON.parse(localStorage.getItem("team2"));
 
 let team;
-if (i === "0") {
-    team = JSON.parse(localStorage.getItem("team1"));
+if (inning === "2") {
+    team = team2;   // second inning just finished, team2 batted
 } else {
-    team = JSON.parse(localStorage.getItem("team2"));
+    team = team1;   // first inning just finished, team1 batted
 }
+
+console.log("[inning-over] inning =", inning, "| loaded team =", team);
 
 const container = document.getElementById("highlights");
 
-// ✅ CHANGED: wrapped everything in an async IIFE so we can await IndexedDB lookups
 (async () => {
 
     for (const [name, player] of Object.entries(team)) {
-        if (typeof player !== "object") continue;
+        if (typeof player !== "object" || player === null) continue;
 
-        // ✅ CHANGED: resolve each video ID to its actual base64 src from IndexedDB
+        const rawFours = player.fours || [];
+        const rawSixes = player.sixes || [];
+
+        console.log(`[inning-over] ${name} → fours IDs:`, rawFours.map(e => e.video), "| sixes IDs:", rawSixes.map(e => e.video));
+
+        // ✅ Resolve each ID from IndexedDB
         const foursResolved = [];
-        for (const entry of (player.fours || [])) {
-            const src = await VideoDB.get(entry.video).catch(() => null);
+        for (const entry of rawFours) {
+            const src = await VideoDB.get(entry.video).catch((err) => {
+                console.warn("[inning-over] Failed to get four video:", entry.video, err);
+                return null;
+            });
             if (src) foursResolved.push({ ...entry, video: src, type: "FOUR" });
         }
 
         const sixesResolved = [];
-        for (const entry of (player.sixes || [])) {
-            const src = await VideoDB.get(entry.video).catch(() => null);
+        for (const entry of rawSixes) {
+            const src = await VideoDB.get(entry.video).catch((err) => {
+                console.warn("[inning-over] Failed to get six video:", entry.video, err);
+                return null;
+            });
             if (src) sixesResolved.push({ ...entry, video: src, type: "SIX" });
         }
+
+        console.log(`[inning-over] ${name} → resolved fours: ${foursResolved.length}, sixes: ${sixesResolved.length}`);
 
         const videos = [...foursResolved, ...sixesResolved];
         if (videos.length === 0) continue;
@@ -55,9 +147,6 @@ const container = document.getElementById("highlights");
 
         const title = document.createElement("div");
         title.className = "section-title";
-
-        const foursCount = foursResolved.length;
-        const sixesCount = sixesResolved.length;
 
         title.innerHTML = `
             <p>${name.toUpperCase()}</p>
@@ -70,8 +159,8 @@ const container = document.getElementById("highlights");
                     <span>Balls:</span>
                     <span class="stat-value">${player.balls}</span>
                 </div>
-                ${foursCount > 0 ? `<div class="stat-item"><span>4s:</span><span class="stat-value">${foursCount}</span></div>` : ''}
-                ${sixesCount > 0 ? `<div class="stat-item"><span>6s:</span><span class="stat-value">${sixesCount}</span></div>` : ''}
+                ${foursResolved.length > 0 ? `<div class="stat-item"><span>4s:</span><span class="stat-value">${foursResolved.length}</span></div>` : ''}
+                ${sixesResolved.length > 0 ? `<div class="stat-item"><span>6s:</span><span class="stat-value">${sixesResolved.length}</span></div>` : ''}
             </div>
         `;
         section.appendChild(title);
@@ -89,13 +178,12 @@ const container = document.getElementById("highlights");
             if (idx === 0) card.classList.add("active");
 
             const vid = document.createElement("video");
-            vid.src = item.video;   // now a resolved base64 string
+            vid.src = item.video;
             vid.muted = true;
             vid.loop = true;
             vid.playsInline = true;
             vid.setAttribute("webkit-playsinline", "");
             vid.preload = "metadata";
-
             if (idx === 0) vid.autoplay = true;
 
             const overlay = document.createElement("div");
@@ -140,45 +228,39 @@ const container = document.getElementById("highlights");
         section.appendChild(dotsContainer);
         container.appendChild(section);
 
-        // ===== AUTO-ROTATION LOGIC =====
+        // ===== AUTO-ROTATION =====
         let currentIndex = 0;
         let autoPlayInterval;
         let progressInterval;
         const SLIDE_DURATION = 4000;
         const cards = carouselTrack.querySelectorAll(".video-card");
-        const dots = dotsContainer.querySelectorAll(".dot");
+        const dots  = dotsContainer.querySelectorAll(".dot");
 
         function updateCarousel(index) {
             cards.forEach((card, i) => {
-                const video = card.querySelector("video");
-
+                const v = card.querySelector("video");
                 if (i === index) {
                     card.classList.add("active");
                     card.style.opacity = "1";
                     card.style.transform = "translate(-50%, -50%) scale(1)";
-                    safePlay(video);
+                    safePlay(v);
                 } else {
                     card.classList.remove("active");
                     card.style.opacity = "0";
                     card.style.transform = "translate(-50%, -50%) scale(0.7)";
-                    safePause(video);
+                    safePause(v);
                 }
             });
-
-            dots.forEach((dot, i) => {
-                dot.classList.toggle("active", i === index);
-            });
+            dots.forEach((dot, i) => dot.classList.toggle("active", i === index));
         }
 
         function startProgress() {
             let progress = 0;
             progressBar.style.width = "0%";
-
             clearInterval(progressInterval);
             progressInterval = setInterval(() => {
                 progress += 100 / (SLIDE_DURATION / 100);
                 progressBar.style.width = `${Math.min(progress, 100)}%`;
-
                 if (progress >= 100) clearInterval(progressInterval);
             }, 100);
         }
@@ -204,33 +286,29 @@ const container = document.getElementById("highlights");
             startAutoPlay();
         }
 
-        // Initialize
         updateCarousel(0);
         startAutoPlay();
 
-        // Pause on interaction
         carouselContainer.addEventListener("touchstart", () => {
             clearInterval(autoPlayInterval);
             clearInterval(progressInterval);
         });
-
         carouselContainer.addEventListener("touchend", () => {
             startAutoPlay();
         });
     }
 
-    // Show empty state if no highlights
+    // Empty state
     if (container.children.length === 0) {
         container.innerHTML = '<div class="empty-state">No highlights available for this inning</div>';
     }
 
-})(); // end async IIFE
+})();
 
 /* ===== LIGHTBOX ===== */
-
-const lightbox = document.getElementById("lightbox");
+const lightbox      = document.getElementById("lightbox");
 const lightboxVideo = document.getElementById("lightboxVideo");
-const closeBtn = document.getElementById("closeBtn");
+const closeBtn      = document.getElementById("closeBtn");
 
 function openLightbox(src) {
     lightboxVideo.src = src;

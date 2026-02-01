@@ -10,14 +10,12 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        /* Smooth transitions for the card stack effect */
         .card-transition {
             transition-property: all;
             transition-duration: 500ms;
             transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        /* Custom scrollbar hiding */
         .no-scrollbar::-webkit-scrollbar {
             display: none;
         }
@@ -26,9 +24,9 @@
             scrollbar-width: none;
         }
         html, body {
-        width: 100%;
-        overflow-x: hidden;
-    }
+            width: 100%;
+            overflow-x: hidden;
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-green-900 via-blue-900 to-purple-900 font-sans overflow-x-hidden">
@@ -47,7 +45,7 @@
         
         <div class="relative max-w-md mx-auto">
             <div id="cards-container" class="relative h-[500px]">
-                </div>
+            </div>
 
             <button id="prev-btn" class="absolute left-0 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-4 rounded-full shadow-xl z-40 transition-all active:scale-90 cursor-pointer">
                 <i data-lucide="chevron-left" class="text-gray-800 w-7 h-7"></i>
@@ -57,7 +55,7 @@
             </button>
 
             <div id="dots-container" class="flex justify-center gap-2 mt-8">
-                </div>
+            </div>
         </div>
     </div>
 
@@ -76,7 +74,7 @@
         </div>
 
         <div id="video-grid" class="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-3 gap-4">
-            </div>
+        </div>
     </div>
 
     <div class="py-8 px-4">
@@ -91,17 +89,11 @@
                 <h3 class="text-2xl font-bold text-white mb-4 text-center">
                     Add New Player
                 </h3>
-                
-                <!-- <div class="space-y-4">
-                    <input type="text" id="inp-name" placeholder="Player Name" class="w-full px-4 py-3 rounded-xl bg-white/90 focus:bg-white outline-none focus:ring-2 focus:ring-yellow-400">
-                    <input type="url" id="inp-image" placeholder="Image URL" class="w-full px-4 py-3 rounded-xl bg-white/90 focus:bg-white outline-none focus:ring-2 focus:ring-yellow-400">
-                </div> -->
-                <div class="space-y-4">
 
+                <div class="space-y-4">
                     <input type="text" id="inp-name" placeholder="Player Name"
                         class="w-full px-4 py-3 rounded-xl bg-white/90 focus:bg-white outline-none focus:ring-2 focus:ring-yellow-400">
 
-                    <!-- Camera preview -->
                     <div class="relative w-full h-48 rounded-xl overflow-hidden bg-black cursor-pointer" id="camera-box">
                         <video id="camera" autoplay playsinline class="w-full h-full object-cover hidden"></video>
                         <img id="photo-preview" class="w-full h-full object-cover hidden">
@@ -114,11 +106,7 @@
                         class="hidden w-full py-2 rounded-xl bg-yellow-400 font-semibold">
                         Capture Photo
                     </button>
-
                 </div>
-
-
-
 
                 <div class="flex gap-3 mt-6">
                     <button id="cancel-add-btn" class="flex-1 bg-gray-500 text-white py-3 rounded-xl font-bold hover:bg-gray-600 transition-all">
@@ -134,22 +122,21 @@
 
     <div class="py-12 px-4">
         <div class="max-w-md mx-auto">
-            <button  id="btn" class="w-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 text-white py-6 rounded-3xl font-black text-3xl shadow-2xl hover:shadow-3xl transition-all active:scale-95 hover:scale-105 animate-pulse">
+            <button id="btn" class="w-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 text-white py-6 rounded-3xl font-black text-3xl shadow-2xl hover:shadow-3xl transition-all active:scale-95 hover:scale-105 animate-pulse">
                 🚀 START
             </button>
         </div>
     </div>
 
+    <!-- Video modal -->
     <div id="video-modal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 hidden" onclick="closeVideoModal()">
-        <div class="bg-white rounded-2xl p-4 max-w-lg w-full" onclick="event.stopPropagation()">
-            <img id="modal-image" src="" alt="Thumbnail" class="w-full h-64 object-cover rounded-xl">
-            <h3 id="modal-title" class="text-xl font-bold mt-4 text-center"></h3>
+        <div class="bg-black rounded-2xl p-4 max-w-lg w-full" onclick="event.stopPropagation()">
+            <div id="modal-video-wrapper"></div>
             <button onclick="closeVideoModal()" class="w-full mt-4 bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 cursor-pointer">
                 Close
             </button>
         </div>
     </div>
-
-<script src="index.js"></script>
+    <script src="index.js"></script>
 </body>
 </html>

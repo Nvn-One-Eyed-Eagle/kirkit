@@ -1,5 +1,80 @@
 
-// Sample data structure - replace this with your actual data
+/* ==========================================================================
+   VideoDB — IndexedDB wrapper (inlined)
+   ========================================================================== */
+const VideoDB = (() => {
+    const DB_NAME = "cricketVideos";
+    const STORE  = "videos";
+    const VERSION = 1;
+    let db = null;
+
+    function getDB() {
+        if (db) return Promise.resolve(db);
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, VERSION);
+            req.onupgradeneeded = (e) => {
+                const database = e.target.result;
+                if (!database.objectStoreNames.contains(STORE)) {
+                    database.createObjectStore(STORE);
+                }
+            };
+            req.onsuccess  = (e) => { db = e.target.result; resolve(db); };
+            req.onerror    = (e) => reject(e.target.error);
+        });
+    }
+
+    async function save(base64Video) {
+        const database = await getDB();
+        const id = "vid_" + Date.now() + "_" + Math.random().toString(36).slice(2, 9);
+        return new Promise((resolve, reject) => {
+            const tx   = database.transaction(STORE, "readwrite");
+            const store = tx.objectStore(STORE);
+            const req  = store.put(base64Video, id);
+            req.onsuccess = () => resolve(id);
+            req.onerror   = (e) => reject(e.target.error);
+        });
+    }
+
+    async function get(id) {
+        const database = await getDB();
+        return new Promise((resolve, reject) => {
+            const tx   = database.transaction(STORE, "readonly");
+            const store = tx.objectStore(STORE);
+            const req  = store.get(id);
+            req.onsuccess = (e) => resolve(e.target.result || null);
+            req.onerror   = (e) => reject(e.target.error);
+        });
+    }
+
+    async function remove(id) {
+        const database = await getDB();
+        return new Promise((resolve, reject) => {
+            const tx   = database.transaction(STORE, "readwrite");
+            const store = tx.objectStore(STORE);
+            const req  = store.delete(id);
+            req.onsuccess = () => resolve();
+            req.onerror   = (e) => reject(e.target.error);
+        });
+    }
+
+    async function clear() {
+        const database = await getDB();
+        return new Promise((resolve, reject) => {
+            const tx   = database.transaction(STORE, "readwrite");
+            const store = tx.objectStore(STORE);
+            const req  = store.clear();
+            req.onsuccess = () => resolve();
+            req.onerror   = (e) => reject(e.target.error);
+        });
+    }
+
+    return { save, get, remove, clear };
+})();
+
+/* ==========================================================================
+   MATCH SUMMARY PAGE
+   ========================================================================== */
+
 const team1 = JSON.parse(localStorage.getItem("team1"));
 const team2 = JSON.parse(localStorage.getItem("team2"));
 
@@ -15,7 +90,6 @@ function calculateDotBalls(balls, fours, sixes) {
 function generateMatchInfo(team1Data, team2Data) {
     const winner = team2Data.totalruns > team1Data.totalruns ? 'Team 2' : 
                     team1Data.totalruns > team2Data.totalruns ? 'Team 1' : 'Tie';
-    const margin = Math.abs(team2Data.totalruns - team1Data.totalruns);
 
     return `
         <div class="team-score">
@@ -34,28 +108,27 @@ function generateMatchInfo(team1Data, team2Data) {
     `;
 }
 
-function generatePlayerCard(playerName, playerData) {
+// ✅ CHANGED: async — resolves all video IDs before building HTML
+async function generatePlayerCard(playerName, playerData) {
     const strikeRate = calculateStrikeRate(playerData.runs, playerData.balls);
     const dotBalls = calculateDotBalls(playerData.balls, playerData.fours, playerData.sixes);
     const boundaryPercentage = playerData.balls > 0 ? 
         (((playerData.fours?.length || 0) + (playerData.sixes?.length || 0)) / playerData.balls * 100).toFixed(1) : 0;
 
-    // Performance score (0-100)
     const performanceScore = Math.min(100, (parseFloat(strikeRate) / 2) + (playerData.runs * 2));
 
+    // ✅ CHANGED: resolve every video ID from IndexedDB before touching the DOM
     let highlightsHTML = '';
     const allHighlights = [];
 
-    // Collect all videos
-    if (playerData.sixes && playerData.sixes.length > 0) {
-        playerData.sixes.forEach((six, idx) => {
-            allHighlights.push({video: six.video, label: 'SIX', type: 'six'});
-        });
+    for (const six of (playerData.sixes || [])) {
+        const src = await VideoDB.get(six.video).catch(() => null);
+        if (src) allHighlights.push({ video: src, label: 'SIX' });
     }
-    if (playerData.fours && playerData.fours.length > 0) {
-        playerData.fours.forEach((four, idx) => {
-            allHighlights.push({video: four.video, label: 'FOUR', type: 'four'});
-        });
+
+    for (const four of (playerData.fours || [])) {
+        const src = await VideoDB.get(four.video).catch(() => null);
+        if (src) allHighlights.push({ video: src, label: 'FOUR' });
     }
 
     if (allHighlights.length > 0) {
@@ -63,10 +136,10 @@ function generatePlayerCard(playerName, playerData) {
             <div class="highlights-section">
                 <div class="highlights-title">⚡ Match Highlights</div>
                 <div class="videos-grid">
-                    ${allHighlights.map(highlight => `
+                    ${allHighlights.map(h => `
                         <div class="video-item">
-                            <video src="${highlight.video}" controls loop muted></video>
-                            <div class="video-label">${highlight.label}</div>
+                            <video src="${h.video}" controls loop muted></video>
+                            <div class="video-label">${h.label}</div>
                         </div>
                     `).join('')}
                 </div>
@@ -134,14 +207,17 @@ function generatePlayerCard(playerName, playerData) {
     `;
 }
 
-function generateTeamSection(teamName, teamData) {
+// ✅ CHANGED: async — awaits every player card
+async function generateTeamSection(teamName, teamData) {
     const players = Object.keys(teamData).filter(key => 
-        typeof teamData[key] === 'object' && teamData[key].runs !== undefined
+        typeof teamData[key] === 'object' && teamData[key] !== null && teamData[key].runs !== undefined
     );
 
-    const playersHTML = players.map(playerName => 
-        generatePlayerCard(playerName, teamData[playerName])
-    ).join('');
+    // await each card sequentially so all videos resolve
+    let playersHTML = '';
+    for (const playerName of players) {
+        playersHTML += await generatePlayerCard(playerName, teamData[playerName]);
+    }
 
     const runRate = teamData.totalballs > 0 ? 
         ((teamData.totalruns / teamData.totalballs) * 6).toFixed(2) : 0;
@@ -176,47 +252,38 @@ function generateTeamSection(teamName, teamData) {
     `;
 }
 
-// Initialize the page with your actual data
-function initializePage(team1Data, team2Data) {
+// ✅ CHANGED: async — awaits both team sections before injecting
+async function initializePage(team1Data, team2Data) {
     document.getElementById('matchInfo').innerHTML = generateMatchInfo(team1Data, team2Data);
-    document.getElementById('teamsWrapper').innerHTML = 
-        generateTeamSection('TEAM 1', team1Data) +
-        generateTeamSection('TEAM 2', team2Data);
-    
+
+    const team1HTML = await generateTeamSection('TEAM 1', team1Data);
+    const team2HTML = await generateTeamSection('TEAM 2', team2Data);
+    document.getElementById('teamsWrapper').innerHTML = team1HTML + team2HTML;
+
     setupTeamSwitcher();
     setupSwipeGesture();
 }
 
-// Team Switcher Functionality
+// --- Team Switcher ---
 function setupTeamSwitcher() {
     const tabs = document.querySelectorAll('.team-tab');
-    const wrapper = document.getElementById('teamsWrapper');
-
     tabs.forEach((tab, index) => {
-        tab.addEventListener('click', () => {
-            switchToTeam(index);
-        });
+        tab.addEventListener('click', () => switchToTeam(index));
     });
 }
 
 function switchToTeam(teamIndex) {
     const tabs = document.querySelectorAll('.team-tab');
     const wrapper = document.getElementById('teamsWrapper');
-    
-    // Update active tab
+
     tabs.forEach((tab, index) => {
-        if (index === teamIndex) {
-            tab.classList.add('active');
-        } else {
-            tab.classList.remove('active');
-        }
+        tab.classList.toggle('active', index === teamIndex);
     });
 
-    // Slide to the selected team
     wrapper.style.transform = `translateX(-${teamIndex * 100}%)`;
 }
 
-// Swipe Gesture Support
+// --- Swipe Gesture ---
 function setupSwipeGesture() {
     const wrapper = document.getElementById('teamsWrapper');
     let touchStartX = 0;
@@ -229,27 +296,20 @@ function setupSwipeGesture() {
 
     wrapper.addEventListener('touchend', (e) => {
         touchEndX = e.changedTouches[0].screenX;
-        handleSwipe();
-    }, { passive: true });
-
-    function handleSwipe() {
-        const swipeThreshold = 50;
         const diff = touchStartX - touchEndX;
 
-        if (Math.abs(diff) > swipeThreshold) {
+        if (Math.abs(diff) > 50) {
             if (diff > 0 && currentTeam === 0) {
-                // Swipe left - go to team 2
                 currentTeam = 1;
                 switchToTeam(1);
             } else if (diff < 0 && currentTeam === 1) {
-                // Swipe right - go to team 1
                 currentTeam = 0;
                 switchToTeam(0);
             }
         }
-    }
+    }, { passive: true });
 }
 
-// Call this function with your actual team data
-// Replace team1 and team2 variables with your actual data
+// --- Boot ---
 initializePage(team1, team2);
+
