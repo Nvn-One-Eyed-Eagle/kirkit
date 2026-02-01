@@ -1,3 +1,7 @@
+/* ==========================================================================
+   highlights.js — resolves IndexedDB video IDs before rendering
+   ========================================================================== */
+
 function safePlay(video) {
     if (!video) return;
     video.muted = true;
@@ -6,20 +10,15 @@ function safePlay(video) {
     if (p !== undefined) p.catch(() => {});
 }
 
-
 function safePause(video) {
     if (!video) return;
     video.pause();
 }
 
-
-
-
 const end = localStorage.getItem("end");
 let i = localStorage.getItem("inning");
 
 let team;
-
 if (i === "0") {
     team = JSON.parse(localStorage.getItem("team1"));
 } else {
@@ -28,204 +27,204 @@ if (i === "0") {
 
 const container = document.getElementById("highlights");
 
-Object.entries(team).forEach(([name, player]) => {
-    if (typeof player !== "object") return;
+// ✅ CHANGED: wrapped everything in an async IIFE so we can await IndexedDB lookups
+(async () => {
 
-    const videos = [
-        ...(player.fours || []).map(v => ({ ...v, type: 'FOUR' })),
-        ...(player.sixes || []).map(v => ({ ...v, type: 'SIX' }))
-    ];
+    for (const [name, player] of Object.entries(team)) {
+        if (typeof player !== "object") continue;
 
-    if (videos.length === 0) return;
-
-    // ===== SECTION =====
-    const section = document.createElement("section");
-    section.className = "player-section";
-
-    const title = document.createElement("div");
-    title.className = "section-title";
-    
-    const foursCount = (player.fours || []).length;
-    const sixesCount = (player.sixes || []).length;
-    
-    title.innerHTML = `
-        <p>${name.toUpperCase()}</p>
-        <div class="stats">
-            <div class="stat-item">
-                <span>Runs:</span>
-                <span class="stat-value">${player.runs}</span>
-            </div>
-            <div class="stat-item">
-                <span>Balls:</span>
-                <span class="stat-value">${player.balls}</span>
-            </div>
-            ${foursCount > 0 ? `<div class="stat-item"><span>4s:</span><span class="stat-value">${foursCount}</span></div>` : ''}
-            ${sixesCount > 0 ? `<div class="stat-item"><span>6s:</span><span class="stat-value">${sixesCount}</span></div>` : ''}
-        </div>
-    `;
-    section.appendChild(title);
-
-    // ===== CAROUSEL =====
-    const carouselContainer = document.createElement("div");
-    carouselContainer.className = "carousel-container";
-
-    const carouselTrack = document.createElement("div");
-    carouselTrack.className = "carousel-track";
-
-    videos.forEach((item, idx) => {
-        const card = document.createElement("div");
-        card.className = "video-card";
-        if (idx === 0) card.classList.add("active");
-
-        const vid = document.createElement("video");
-        vid.src = item.video;
-        vid.muted = true;
-        vid.loop = true;
-        vid.playsInline = true;
-		vid.setAttribute("webkit-playsinline", "");
-        vid.preload = "metadata";
-
-        
-        if (idx === 0) {
-            vid.autoplay = true;
+        // ✅ CHANGED: resolve each video ID to its actual base64 src from IndexedDB
+        const foursResolved = [];
+        for (const entry of (player.fours || [])) {
+            const src = await VideoDB.get(entry.video).catch(() => null);
+            if (src) foursResolved.push({ ...entry, video: src, type: "FOUR" });
         }
 
-        const overlay = document.createElement("div");
-        overlay.className = "video-card-overlay";
-        overlay.innerHTML = `<div class="shot-label">${item.type}!</div>`;
-
-        const playIcon = document.createElement("div");
-        playIcon.className = "play-icon";
-        playIcon.innerHTML = '▶';
-
-        card.appendChild(vid);
-        card.appendChild(overlay);
-        card.appendChild(playIcon);
-        
-        card.onclick = () => openLightbox(item.video);
-
-        carouselTrack.appendChild(card);
-    });
-
-    carouselContainer.appendChild(carouselTrack);
-
-    // Progress bar
-    const progressContainer = document.createElement("div");
-    progressContainer.className = "auto-play-progress";
-    const progressBar = document.createElement("div");
-    progressBar.className = "progress-bar";
-    progressContainer.appendChild(progressBar);
-
-    // Dots
-    const dotsContainer = document.createElement("div");
-    dotsContainer.className = "carousel-dots";
-    
-    videos.forEach((_, idx) => {
-        const dot = document.createElement("div");
-        dot.className = `dot ${idx === 0 ? 'active' : ''}`;
-        dot.onclick = () => goToSlide(idx);
-        dotsContainer.appendChild(dot);
-    });
-
-    section.appendChild(carouselContainer);
-    section.appendChild(progressContainer);
-    section.appendChild(dotsContainer);
-    container.appendChild(section);
-
-    // ===== AUTO-ROTATION LOGIC =====
-    let currentIndex = 0;
-    let autoPlayInterval;
-    let progressInterval;
-    const SLIDE_DURATION = 4000;
-    const cards = carouselTrack.querySelectorAll(".video-card");
-    const dots = dotsContainer.querySelectorAll(".dot");
-
-    function updateCarousel(index) {
-    cards.forEach((card, i) => {
-        const video = card.querySelector("video");
-
-        if (i === index) {
-            card.classList.add("active");
-            card.style.opacity = "1";
-            card.style.transform = "translate(-50%, -50%) scale(1)";
-            safePlay(video);
-        } else {
-            card.classList.remove("active");
-            card.style.opacity = "0";
-            card.style.transform = "translate(-50%, -50%) scale(0.7)";
-            safePause(video);
+        const sixesResolved = [];
+        for (const entry of (player.sixes || [])) {
+            const src = await VideoDB.get(entry.video).catch(() => null);
+            if (src) sixesResolved.push({ ...entry, video: src, type: "SIX" });
         }
-    });
 
-    dots.forEach((dot, i) => {
-        dot.classList.toggle("active", i === index);
-    });
-}
+        const videos = [...foursResolved, ...sixesResolved];
+        if (videos.length === 0) continue;
 
+        // ===== SECTION =====
+        const section = document.createElement("section");
+        section.className = "player-section";
 
-    function startProgress() {
-        let progress = 0;
-        progressBar.style.width = "0%";
-        
-        clearInterval(progressInterval);
-        progressInterval = setInterval(() => {
-            progress += 100 / (SLIDE_DURATION / 100);
-            progressBar.style.width = `${Math.min(progress, 100)}%`;
-            
-            if (progress >= 100) {
-                clearInterval(progressInterval);
-            }
-        }, 100);
-    }
+        const title = document.createElement("div");
+        title.className = "section-title";
 
-    function goToSlide(index) {
-        currentIndex = index;
-        updateCarousel(currentIndex);
-        startProgress();
-        resetAutoPlay();
-    }
+        const foursCount = foursResolved.length;
+        const sixesCount = sixesResolved.length;
 
-    function nextSlide() {
-        currentIndex = (currentIndex + 1) % cards.length;
-        updateCarousel(currentIndex);
-        startProgress();
-    }
+        title.innerHTML = `
+            <p>${name.toUpperCase()}</p>
+            <div class="stats">
+                <div class="stat-item">
+                    <span>Runs:</span>
+                    <span class="stat-value">${player.runs}</span>
+                </div>
+                <div class="stat-item">
+                    <span>Balls:</span>
+                    <span class="stat-value">${player.balls}</span>
+                </div>
+                ${foursCount > 0 ? `<div class="stat-item"><span>4s:</span><span class="stat-value">${foursCount}</span></div>` : ''}
+                ${sixesCount > 0 ? `<div class="stat-item"><span>6s:</span><span class="stat-value">${sixesCount}</span></div>` : ''}
+            </div>
+        `;
+        section.appendChild(title);
 
-	function startAutoPlay() {
-		clearInterval(autoPlayInterval);
-		autoPlayInterval = setInterval(() => {
-			currentIndex = (currentIndex + 1) % cards.length;
-			updateCarousel(currentIndex);
-			startProgress();
-		}, SLIDE_DURATION);
-	}
+        // ===== CAROUSEL =====
+        const carouselContainer = document.createElement("div");
+        carouselContainer.className = "carousel-container";
 
+        const carouselTrack = document.createElement("div");
+        carouselTrack.className = "carousel-track";
 
-    function resetAutoPlay() {
-        clearInterval(autoPlayInterval);
+        videos.forEach((item, idx) => {
+            const card = document.createElement("div");
+            card.className = "video-card";
+            if (idx === 0) card.classList.add("active");
+
+            const vid = document.createElement("video");
+            vid.src = item.video;   // now a resolved base64 string
+            vid.muted = true;
+            vid.loop = true;
+            vid.playsInline = true;
+            vid.setAttribute("webkit-playsinline", "");
+            vid.preload = "metadata";
+
+            if (idx === 0) vid.autoplay = true;
+
+            const overlay = document.createElement("div");
+            overlay.className = "video-card-overlay";
+            overlay.innerHTML = `<div class="shot-label">${item.type}!</div>`;
+
+            const playIcon = document.createElement("div");
+            playIcon.className = "play-icon";
+            playIcon.innerHTML = '▶';
+
+            card.appendChild(vid);
+            card.appendChild(overlay);
+            card.appendChild(playIcon);
+
+            card.onclick = () => openLightbox(item.video);
+
+            carouselTrack.appendChild(card);
+        });
+
+        carouselContainer.appendChild(carouselTrack);
+
+        // Progress bar
+        const progressContainer = document.createElement("div");
+        progressContainer.className = "auto-play-progress";
+        const progressBar = document.createElement("div");
+        progressBar.className = "progress-bar";
+        progressContainer.appendChild(progressBar);
+
+        // Dots
+        const dotsContainer = document.createElement("div");
+        dotsContainer.className = "carousel-dots";
+
+        videos.forEach((_, idx) => {
+            const dot = document.createElement("div");
+            dot.className = `dot ${idx === 0 ? 'active' : ''}`;
+            dot.onclick = () => goToSlide(idx);
+            dotsContainer.appendChild(dot);
+        });
+
+        section.appendChild(carouselContainer);
+        section.appendChild(progressContainer);
+        section.appendChild(dotsContainer);
+        container.appendChild(section);
+
+        // ===== AUTO-ROTATION LOGIC =====
+        let currentIndex = 0;
+        let autoPlayInterval;
+        let progressInterval;
+        const SLIDE_DURATION = 4000;
+        const cards = carouselTrack.querySelectorAll(".video-card");
+        const dots = dotsContainer.querySelectorAll(".dot");
+
+        function updateCarousel(index) {
+            cards.forEach((card, i) => {
+                const video = card.querySelector("video");
+
+                if (i === index) {
+                    card.classList.add("active");
+                    card.style.opacity = "1";
+                    card.style.transform = "translate(-50%, -50%) scale(1)";
+                    safePlay(video);
+                } else {
+                    card.classList.remove("active");
+                    card.style.opacity = "0";
+                    card.style.transform = "translate(-50%, -50%) scale(0.7)";
+                    safePause(video);
+                }
+            });
+
+            dots.forEach((dot, i) => {
+                dot.classList.toggle("active", i === index);
+            });
+        }
+
+        function startProgress() {
+            let progress = 0;
+            progressBar.style.width = "0%";
+
+            clearInterval(progressInterval);
+            progressInterval = setInterval(() => {
+                progress += 100 / (SLIDE_DURATION / 100);
+                progressBar.style.width = `${Math.min(progress, 100)}%`;
+
+                if (progress >= 100) clearInterval(progressInterval);
+            }, 100);
+        }
+
+        function goToSlide(index) {
+            currentIndex = index;
+            updateCarousel(currentIndex);
+            startProgress();
+            resetAutoPlay();
+        }
+
+        function startAutoPlay() {
+            clearInterval(autoPlayInterval);
+            autoPlayInterval = setInterval(() => {
+                currentIndex = (currentIndex + 1) % cards.length;
+                updateCarousel(currentIndex);
+                startProgress();
+            }, SLIDE_DURATION);
+        }
+
+        function resetAutoPlay() {
+            clearInterval(autoPlayInterval);
+            startAutoPlay();
+        }
+
+        // Initialize
+        updateCarousel(0);
         startAutoPlay();
+
+        // Pause on interaction
+        carouselContainer.addEventListener("touchstart", () => {
+            clearInterval(autoPlayInterval);
+            clearInterval(progressInterval);
+        });
+
+        carouselContainer.addEventListener("touchend", () => {
+            startAutoPlay();
+        });
     }
 
-    // Initialize
-    updateCarousel(0);
-    startAutoPlay();
+    // Show empty state if no highlights
+    if (container.children.length === 0) {
+        container.innerHTML = '<div class="empty-state">No highlights available for this inning</div>';
+    }
 
-    // Pause on interaction
-	carouselContainer.addEventListener("touchstart", () => {
-		clearInterval(autoPlayInterval);
-		clearInterval(progressInterval);
-	});
-
-	carouselContainer.addEventListener("touchend", () => {
-		startAutoPlay();
-	});
-
-});
-
-// Show empty state if no highlights
-if (container.children.length === 0) {
-    container.innerHTML = '<div class="empty-state">No highlights available for this inning</div>';
-}
+})(); // end async IIFE
 
 /* ===== LIGHTBOX ===== */
 
@@ -239,7 +238,6 @@ function openLightbox(src) {
     lightbox.classList.add("active");
     lightboxVideo.play().catch(() => {});
 }
-
 
 closeBtn.onclick = () => {
     lightbox.classList.remove("active");

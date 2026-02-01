@@ -1,3 +1,94 @@
+/* ==========================================================================
+   videoStore.js — IndexedDB wrapper for match video storage
+   Include this via <script src="videoStore.js"></script> BEFORE match.js
+   ========================================================================== */
+
+const VideoDB = (() => {
+    const DB_NAME = "cricketVideos";
+    const STORE  = "videos";
+    const VERSION = 1;
+
+    let db = null;
+
+    // Returns a promise that resolves once the DB connection is ready
+    function getDB() {
+        if (db) return Promise.resolve(db);
+
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, VERSION);
+
+            req.onupgradeneeded = (e) => {
+                const database = e.target.result;
+                if (!database.objectStoreNames.contains(STORE)) {
+                    database.createObjectStore(STORE); // key = videoId string
+                }
+            };
+
+            req.onsuccess  = (e) => { db = e.target.result; resolve(db); };
+            req.onerror    = (e) => reject(e.target.error);
+        });
+    }
+
+    // Save a base64 video string, returns the generated ID
+    async function save(base64Video) {
+        const database = await getDB();
+        const id = "vid_" + Date.now() + "_" + Math.random().toString(36).slice(2, 9);
+
+        return new Promise((resolve, reject) => {
+            const tx   = database.transaction(STORE, "readwrite");
+            const store = tx.objectStore(STORE);
+            const req  = store.put(base64Video, id);
+
+            req.onsuccess = () => resolve(id);
+            req.onerror   = (e) => reject(e.target.error);
+        });
+    }
+
+    // Retrieve a base64 video string by ID
+    async function get(id) {
+        const database = await getDB();
+
+        return new Promise((resolve, reject) => {
+            const tx   = database.transaction(STORE, "readonly");
+            const store = tx.objectStore(STORE);
+            const req  = store.get(id);
+
+            req.onsuccess = (e) => resolve(e.target.result || null);
+            req.onerror   = (e) => reject(e.target.error);
+        });
+    }
+
+    // Delete a single video by ID
+    async function remove(id) {
+        const database = await getDB();
+
+        return new Promise((resolve, reject) => {
+            const tx   = database.transaction(STORE, "readwrite");
+            const store = tx.objectStore(STORE);
+            const req  = store.delete(id);
+
+            req.onsuccess = () => resolve();
+            req.onerror   = (e) => reject(e.target.error);
+        });
+    }
+
+    // Delete ALL videos (e.g. after match is fully over)
+    async function clear() {
+        const database = await getDB();
+
+        return new Promise((resolve, reject) => {
+            const tx   = database.transaction(STORE, "readwrite");
+            const store = tx.objectStore(STORE);
+            const req  = store.clear();
+
+            req.onsuccess = () => resolve();
+            req.onerror   = (e) => reject(e.target.error);
+        });
+    }
+
+    return { save, get, remove, clear };
+})();
+
 
 /* ==========================================================================
    CONFIG & INITIALIZATION
@@ -13,9 +104,6 @@ if (!team1 || !team2) {
 /* ==========================================================================
    DOM ELEMENTS
    ========================================================================== */
-// --- Game UI Elements ---
-
-
 const strike = document.querySelector(".player-box");
 const nonstrike = document.querySelector(".nstrike");
 const infoContainer = document.getElementById("infoContainer");
@@ -26,30 +114,28 @@ const oinfo = document.querySelector("#otherinfo");
 const previewBtn = document.getElementById("previewBtn");
 const previewVideos = document.getElementById("previewVideos");
 
-const outPlayers = {}; // stores players who got out
+const outPlayers = {};
 
 // --- Camera/Video UI Elements ---
 const video = document.getElementById("camera");
 const status = document.getElementById("status");
 const recordBtn = document.getElementById("record");
-const stopBtn = document.getElementById("stop"); // Note: ID conflict with game 'stop' button if IDs are same
+const stopBtn = document.getElementById("stop");
 const abandonBtn = document.getElementById("abandon");
 
 /* ==========================================================================
    GAME STATE
    ========================================================================== */
-let players = team1; // ⚠️ MUST BE let (inning switch)
+let players = team1;
 let inningsCompleted = 0;
 let strikeSet = false;
 let allset = false;
 let wicketFallen = false;
 
-// Data Storage
 const inning_score = {};
-let overVideos = []; // stores video URLs
-let lastBallVideoURL = null;
-let inning = localStorage.getItem("inning")
-
+let overVideos = [];          // now stores IndexedDB IDs (not base64)
+let lastBallVideoID = null;   // ✅ RENAMED: stores the DB id, not the blob
+let inning = localStorage.getItem("inning");
 
 /* ==========================================================================
    VIDEO RECORDING MODULE
@@ -62,13 +148,12 @@ let isPaused = false;
 let discard = false;
 
 function blobToBase64(blob) {
-	return new Promise((resolve) => {
-		const reader = new FileReader();
-		reader.onloadend = () => resolve(reader.result);
-		reader.readAsDataURL(blob);
-	});
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+    });
 }
-
 
 // Init Camera (Back Camera)
 (async () => {
@@ -85,24 +170,21 @@ function blobToBase64(blob) {
     }
 })();
 
-function next(){
-  // Reset UI + state for next innings
-  strike.innerText = "";
-  nonstrike.innerText = "";
-  strikeSet = false;
-  allset = false;
-  wicketFallen = false;
-  document.querySelector("#bating").innerText = "Team 2";
+function next() {
+    strike.innerText = "";
+    nonstrike.innerText = "";
+    strikeSet = false;
+    allset = false;
+    wicketFallen = false;
+    document.querySelector("#bating").innerText = "Team 2";
 
-  // Switch batting team
-  players = players === team1 ? team2 : team1;
+    players = players === team1 ? team2 : team1;
 
-  renderPlayers();
-  update();
+    renderPlayers();
+    update();
 }
 
-if (inning === '2')
-  next()
+if (inning === '2') next();
 
 function startRecording() {
     chunks = [];
@@ -113,15 +195,19 @@ function startRecording() {
         if (e.data.size) chunks.push(e.data);
     };
 
+    // ✅ CHANGED: save blob to IndexedDB, store only the ID in memory
     recorder.onstop = async () => {
         if (discard) return;
 
         const blob = new Blob(chunks, { type: "video/webm" });
         const base64Video = await blobToBase64(blob);
 
-        lastBallVideoURL = base64Video; 
+        // Save to IndexedDB and get back a lightweight ID
+        const videoID = await VideoDB.save(base64Video);
 
-        overVideos.push(base64Video);
+        lastBallVideoID = videoID;
+
+        overVideos.push(videoID);
 
         // keep only last 6 balls (1 over)
         if (overVideos.length > 6) {
@@ -178,12 +264,9 @@ function abandonRecording() {
    ========================================================================== */
 function getAvailableBatsmen() {
     return Object.keys(players).filter(
-        p =>
-            typeof players[p] === "object" &&
-            !players[p].bold   // ❗ hide out players
+        p => typeof players[p] === "object" && !players[p].bold
     );
 }
-
 
 function isAllOut() {
     return getAvailableBatsmen().length === 0;
@@ -192,7 +275,7 @@ function isAllOut() {
 function getSortedPlayers(playersObj) {
     return Object.entries(playersObj)
         .filter(([_, data]) => typeof data === "object" && "runs" in data)
-        .sort((a, b) => b[1].runs - a[1].runs); // descending runs
+        .sort((a, b) => b[1].runs - a[1].runs);
 }
 
 function finalizeOutPlayer() {
@@ -233,10 +316,8 @@ function renderPlayers() {
         }
 
         div.addEventListener("click", () => {
-            /* AFTER WICKET */
             if (wicketFallen) {
                 if (name === nonstrike.innerText) return;
-
                 strike.innerText = name;
                 wicketFallen = false;
                 stop.classList.remove("lock");
@@ -244,7 +325,6 @@ function renderPlayers() {
                 return;
             }
 
-            /* INITIAL SETUP */
             if (!strikeSet) {
                 strike.innerText = name;
                 stop.classList.remove("lock");
@@ -264,11 +344,14 @@ function renderPlayers() {
 
 function renderOverStats(playersObj) {
     const content = document.querySelector(".overlay-content");
-    content.innerHTML = ""; // clear old content
-    document.querySelector(".overlay-title").innerText = `Over : ${players.overs}`
-    content.appendChild(givevids());
-    enableAutoSwitch(content);
-    const box = document.querySelector(".overlay-box");
+    content.innerHTML = "";
+    document.querySelector(".overlay-title").innerText = `Over : ${players.overs}`;
+
+    // ✅ CHANGED: resolve IDs → base64 asynchronously, then render videos
+    resolveVideoIDs(overVideos).then(base64Videos => {
+        content.appendChild(givevids(base64Videos));
+        enableAutoSwitch(content);
+    });
 
     const sortedPlayers = getSortedPlayers(playersObj);
 
@@ -285,8 +368,8 @@ function renderOverStats(playersObj) {
         </span>
       </div>
       <div class="player-meta">
-        <span>4s: ${p.fours}</span>
-        <span>6s: ${p.sixes}</span>
+        <span>4s: ${p.fours.length}</span>
+        <span>6s: ${p.sixes.length}</span>
       </div>
     `;
 
@@ -294,26 +377,34 @@ function renderOverStats(playersObj) {
     });
 }
 
-// --- Video Preview Helpers ---
+// ✅ NEW: batch-resolve an array of video IDs into base64 strings
+async function resolveVideoIDs(ids) {
+    const results = [];
+    for (const id of ids) {
+        const base64 = await VideoDB.get(id);
+        if (base64) results.push(base64);
+    }
+    return results;
+}
 
-function givevids() {
+// ✅ CHANGED: now receives resolved base64 array as a parameter
+function givevids(base64Videos) {
     const wrapper = document.createDocumentFragment();
 
-    if (overVideos.length === 0) {
+    if (!base64Videos || base64Videos.length === 0) {
         const msg = document.createElement("div");
         msg.innerText = "No video to show";
         return msg;
     }
 
-    overVideos.forEach(url => {
+    base64Videos.forEach(url => {
         const vid = document.createElement("video");
         vid.src = url;
-        vid.autoplay = false; // important
+        vid.autoplay = false;
         vid.muted = true;
         vid.controls = true;
         vid.playsInline = true;
         vid.preload = "metadata";
-
         wrapper.appendChild(vid);
     });
 
@@ -328,27 +419,52 @@ function enableAutoSwitch(container) {
             const next = videos[index + 1];
             if (next) {
                 next.play();
-                next.scrollIntoView({
-                    behavior: "smooth",
-                    inline: "start"
-                });
+                next.scrollIntoView({ behavior: "smooth", inline: "start" });
             }
         });
     });
 
-    // autoplay first video
     if (videos[0]) videos[0].play();
 }
 
 /* ==========================================================================
    CORE GAME LOGIC
    ========================================================================== */
+
+// ✅ NEW: strips video blobs from player data before saving to localStorage
+// The fours/sixes arrays keep their ID references (which are tiny strings),
+// so the highlights page can resolve them later from IndexedDB.
+function sanitizeForStorage(teamObj) {
+    // fours and sixes already contain only IDs now (not base64),
+    // so no transformation needed — just return a clean copy.
+    // This function exists as a safety net in case any stale base64 sneaks in.
+    const safe = JSON.parse(JSON.stringify(teamObj));
+    for (const key in safe) {
+        const p = safe[key];
+        if (typeof p !== "object" || !p) continue;
+        if (Array.isArray(p.fours)) {
+            p.fours = p.fours.map(entry =>
+                typeof entry === "object" && entry.video && entry.video.length > 100
+                    ? { ...entry, video: "[removed]" }  // fallback strip
+                    : entry
+            );
+        }
+        if (Array.isArray(p.sixes)) {
+            p.sixes = p.sixes.map(entry =>
+                typeof entry === "object" && entry.video && entry.video.length > 100
+                    ? { ...entry, video: "[removed]" }
+                    : entry
+            );
+        }
+    }
+    return safe;
+}
+
 function endInning() {
     console.log("Inning Over");
     butts.classList.add("lock");
-    document.querySelector("#radialBtn").classList.add("lock")
+    document.querySelector("#radialBtn").classList.add("lock");
 
-    // Save remaining players' scores
     for (const name in players) {
         if (typeof players[name] === "object") {
             inning_score[name] = players[name];
@@ -356,17 +472,14 @@ function endInning() {
     }
 
     inningsCompleted++;
-    b = localStorage.getItem("inning")
-    if (b === '2')
-        localStorage.setItem("end",true)
+    const b = localStorage.getItem("inning");
+    if (b === '2') localStorage.setItem("end", true);
 
-    // IF BOTH TEAMS HAVE BATTED
     if (inningsCompleted === 2 || inningsCompleted === 1) {
-        // Optional: store final scores
-        localStorage.setItem("team1", JSON.stringify(team1));
-        localStorage.setItem("team2", JSON.stringify(team2));
+        // ✅ CHANGED: sanitize before writing — keeps localStorage small
+        localStorage.setItem("team1", JSON.stringify(sanitizeForStorage(team1)));
+        localStorage.setItem("team2", JSON.stringify(sanitizeForStorage(team2)));
 
-        //STOP EVERYTHING & REDIRECT
         window.location.href = "inning-over.html";
         return;
     }
@@ -403,32 +516,32 @@ document.querySelectorAll(".square, .circle").forEach(btn => {
         batter.runs += run;
         batter.balls++;
 
-        if (run === 4 && lastBallVideoURL) {
+        // ✅ CHANGED: store the video ID, not the base64 blob
+        if (run === 4 && lastBallVideoID) {
             batter.fours.push({
-                video: lastBallVideoURL,
+                video: lastBallVideoID,
                 over: players.overs,
                 ball: players.totalballs
             });
         }
 
-        if (run === 6 && lastBallVideoURL) {
+        if (run === 6 && lastBallVideoID) {
             batter.sixes.push({
-                video: lastBallVideoURL,
+                video: lastBallVideoID,
                 over: players.overs,
                 ball: players.totalballs
             });
         }
-
 
         if (run === 1 || run === 3 || players.totalballs % 6 === 0) {
             [strike.innerText, nonstrike.innerText] =
-            [nonstrike.innerText, strike.innerText];
+                [nonstrike.innerText, strike.innerText];
         }
 
         if (players.totalballs % 6 === 0) {
             players.overs++;
-            document.querySelector("#overlay").classList.add("activey")
-            document.querySelector(".app").classList.add("lock")
+            document.querySelector("#overlay").classList.add("activey");
+            document.querySelector(".app").classList.add("lock");
             renderOverStats(players);
 
             if (players.overs === over || isAllOut()) {
@@ -439,7 +552,7 @@ document.querySelectorAll(".square, .circle").forEach(btn => {
 
         update();
         butts.classList.add("lock");
-        document.querySelector("#radialBtn").classList.add("lock")
+        document.querySelector("#radialBtn").classList.add("lock");
         document.querySelector(".display").classList.remove("lock");
     });
 });
@@ -456,13 +569,10 @@ document.querySelector(".bold-btn").addEventListener("click", () => {
     players[outPlayer].bold = true;
 
     stop.classList.add("lock");
+    finalizeOutPlayer();
 
-    finalizeOutPlayer(); // ✅ REMOVE PLAYER FIRST
-
-    
     const remaining = getAvailableBatsmen();
 
-    // 🟢 ONLY ONE BATSMAN LEFT → auto strike
     if (remaining.length === 1) {
         strike.innerText = remaining[0];
         nonstrike.innerText = "";
@@ -471,7 +581,6 @@ document.querySelector(".bold-btn").addEventListener("click", () => {
         update();
     }
 
-    // 🔴 NO BATSMAN LEFT → inning over
     if (remaining.length === 0) {
         endInning();
         return;
@@ -486,10 +595,8 @@ document.querySelector(".bold-btn").addEventListener("click", () => {
 
     if (isOverEnd) {
         players.overs++;
-
         document.querySelector("#overlay").classList.add("activey");
         document.querySelector(".app").classList.add("lock");
-
         renderOverStats(players);
 
         if (players.overs === over) {
@@ -498,10 +605,9 @@ document.querySelector(".bold-btn").addEventListener("click", () => {
         }
 
         update();
-        return; // 🔑 STOP HERE
+        return;
     }
 
-    // Normal wicket flow (not 6th ball)
     wicketFallen = true;
     strike.innerText = "Select...";
     renderPlayers();
@@ -512,7 +618,6 @@ document.querySelector(".bold-btn").addEventListener("click", () => {
 
     update();
 });
-
 
 // --- Game Control: Stop Button ---
 stop.addEventListener("click", () => {
@@ -534,11 +639,11 @@ document.querySelector(".dot-btn")?.addEventListener("click", () => {
 
     if (players.totalballs % 6 === 0) {
         [strike.innerText, nonstrike.innerText] =
-        [nonstrike.innerText, strike.innerText];
+            [nonstrike.innerText, strike.innerText];
 
         players.overs++;
-        document.querySelector("#overlay").classList.add("activey")
-        document.querySelector(".app").classList.add("lock")
+        document.querySelector("#overlay").classList.add("activey");
+        document.querySelector(".app").classList.add("lock");
         renderOverStats(players);
 
         if (players.overs === over || isAllOut()) {
@@ -548,22 +653,21 @@ document.querySelector(".dot-btn")?.addEventListener("click", () => {
     }
 
     update();
-    document.querySelector("#radialBtn").classList.add("lock")
+    document.querySelector("#radialBtn").classList.add("lock");
     document.querySelector(".display").classList.remove("lock");
 });
 
 // --- Overlay Control ---
 document.querySelector("#cont").addEventListener("click", () => {
-	document.querySelector("#overlay").classList.remove("activey");
-	document.querySelector(".app").classList.remove("lock");
+    document.querySelector("#overlay").classList.remove("activey");
+    document.querySelector(".app").classList.remove("lock");
 
-	overVideos.length = 0;
-	lastBallVideoURL = null;
+    overVideos.length = 0;
+    lastBallVideoID = null;   // ✅ RENAMED
 });
 
-
 // --- Preview Button ---
-previewBtn.addEventListener("click", () => {
+previewBtn.addEventListener("click", async () => {
     previewVideos.innerHTML = "";
 
     if (overVideos.length === 0) {
@@ -571,7 +675,10 @@ previewBtn.addEventListener("click", () => {
         return;
     }
 
-    overVideos.forEach(url => {
+    // ✅ CHANGED: resolve IDs before rendering
+    const base64Videos = await resolveVideoIDs(overVideos);
+
+    base64Videos.forEach(url => {
         const vid = document.createElement("video");
         vid.src = url;
         vid.controls = true;
