@@ -248,24 +248,45 @@ cameraBox.addEventListener("click", async () => {
 });
 
 captureBtn.addEventListener("click", () => {
+    const MAX_WIDTH = 300;   // ideal for profile image
+    const MAX_HEIGHT = 300;
+    const QUALITY = 0.6;     // 60% JPEG quality
+
+    let width = video.videoWidth;
+    let height = video.videoHeight;
+
+    // Maintain aspect ratio
+    if (width > height) {
+        if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+        }
+    } else {
+        if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+        }
+    }
+
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = width;
+    canvas.height = height;
 
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0);
+    ctx.drawImage(video, 0, 0, width, height);
 
-    capturedImage = canvas.toDataURL("image/png");
+    // 🔥 JPEG instead of PNG
+    capturedImage = canvas.toDataURL("image/jpeg", QUALITY);
 
     photoPreview.src = capturedImage;
     photoPreview.classList.remove("hidden");
     video.classList.add("hidden");
     captureBtn.classList.add("hidden");
 
-    // Stop camera
     stream.getTracks().forEach(track => track.stop());
     stream = null;
 });
+
 
 
 submitAddBtn.addEventListener('click', () => {
