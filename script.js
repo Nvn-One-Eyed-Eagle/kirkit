@@ -691,3 +691,4 @@ previewBtn.addEventListener("click", async () => {
    INITIAL RENDER
    ========================================================================== */
 renderPlayers();
+
