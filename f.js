@@ -1,4 +1,68 @@
-const players = JSON.parse(localStorage.getItem("matchData"));
+// Add this function at the top of your file
+function sanitizeForStorage(teamObj) {
+    const safe = JSON.parse(JSON.stringify(teamObj));
+    
+    for (const key in safe) {
+        const p = safe[key];
+        if (typeof p !== "object" || !p) continue;
+        
+        // Keep only the video IDs, remove base64 data
+        if (Array.isArray(p.fours)) {
+            p.fours = p.fours.map(entry => {
+                if (typeof entry === "object" && entry.video) {
+                    // If it's a long base64 string, keep only the ID reference
+                    return {
+                        ...entry,
+                        video: entry.video.length > 100 ? "[ID]" : entry.video
+                    };
+                }
+                return entry;
+            });
+        }
+        
+        if (Array.isArray(p.sixes)) {
+            p.sixes = p.sixes.map(entry => {
+                if (typeof entry === "object" && entry.video) {
+                    return {
+                        ...entry,
+                        video: entry.video.length > 100 ? "[ID]" : entry.video
+                    };
+                }
+                return entry;
+            });
+        }
+    }
+    
+    return safe;
+}
+
+// Then use it when saving:
+goBtn.addEventListener("click", () => {
+  const { team1, team2 } = buildTeamsOnGo(players);
+  const overs = Number(document.getElementById("oversInput").value) || 0;
+  if (overs <= 0) return alert("Enter valid overs");
+
+  localStorage.setItem("overs", JSON.stringify(overs));
+  
+  // ✅ Sanitize before saving
+  localStorage.setItem("team1", JSON.stringify(sanitizeForStorage(team1)));
+  localStorage.setItem("team2", JSON.stringify(sanitizeForStorage(team2)));
+
+  goBtn.textContent = "Teams Locked!";
+  goBtn.style.background = "#10b981";
+  
+  document.querySelectorAll(".grid-box").forEach(el => {
+    el.style.pointerEvents = "none";
+  });
+
+  window.location.href = "match.html";
+});
+
+// Load matchData but strip videos immediately
+const rawPlayers = JSON.parse(localStorage.getItem("matchData"));
+const players = sanitizeForStorage(rawPlayers);
+
+// Now players is lightweight and won't cause quota issues
 localStorage.setItem("inning",0);
 localStorage.setItem("end",false);
 // Populate Grid
