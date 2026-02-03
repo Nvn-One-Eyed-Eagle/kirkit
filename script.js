@@ -3,6 +3,8 @@
    Include this via <script src="videoStore.js"></script> BEFORE match.js
    ========================================================================== */
 
+
+   
 const VideoDB = (() => {
     const DB_NAME = "cricketVideos";
     const STORE  = "videos";
@@ -140,7 +142,8 @@ let inning = localStorage.getItem("inning");
 /* ==========================================================================
    VIDEO RECORDING MODULE
    ========================================================================== */
-let stream;
+let stream = null;
+let cameraReady = false;
 let recorder;
 let chunks = [];
 let isRecording = false;
@@ -154,21 +157,89 @@ function blobToBase64(blob) {
         reader.readAsDataURL(blob);
     });
 }
+// Check if running as PWA
+const isPWA = window.matchMedia('(display-mode: standalone)').matches 
+    || window.navigator.standalone === true;
+
+// Check storage quota
+if ('storage' in navigator && 'estimate' in navigator.storage) {
+    navigator.storage.estimate().then(estimate => {
+        const percentUsed = (estimate.usage / estimate.quota) * 100;
+        if (percentUsed > 80) {
+            alert('Storage almost full! Consider clearing old videos.');
+        }
+    });
+}
 
 // Init Camera (Back Camera)
 (async () => {
     try {
+        recordBtn.disabled = true;
+        status.textContent = "Requesting camera...";
+        
         stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "environment" },
+            video: { facingMode: { ideal: "environment" } },
             audio: true
         });
+        
         video.srcObject = stream;
+        cameraReady = true;
         status.textContent = "Back camera ready";
+        recordBtn.disabled = false;
+        recordBtn.textContent = "▶";
+        
     } catch (err) {
-        status.textContent = "Camera access failed";
-        console.error(err);
+        status.textContent = "Camera access denied or unavailable";
+        console.error("Camera error:", err);
+        alert("Camera access is required for video recording. Please allow camera permissions.");
     }
 })();
+
+function startRecording() {
+    // Safety check
+    if (!cameraReady || !stream || !stream.active) {
+        status.textContent = "Camera not available";
+        return;
+    }
+
+    chunks = [];
+    discard = false;
+
+    try {
+        recorder = new MediaRecorder(stream);
+        recorder.ondataavailable = e => {
+            if (e.data.size) chunks.push(e.data);
+        };
+
+        recorder.onstop = async () => {
+            if (discard) return;
+
+            const blob = new Blob(chunks, { type: "video/webm" });
+            const base64Video = await blobToBase64(blob);
+            const videoID = await VideoDB.save(base64Video);
+
+            lastBallVideoID = videoID;
+            overVideos.push(videoID);
+
+            if (overVideos.length > 6) {
+                overVideos.shift();
+            }
+
+            status.textContent = "Ball recorded";
+        };
+
+        recorder.start();
+        isRecording = true;
+        isPaused = false;
+        recordBtn.textContent = "⏸";
+        status.textContent = "Recording…";
+        
+    } catch (err) {
+        status.textContent = "Recording failed";
+        console.error("MediaRecorder error:", err);
+    }
+}
+
 
 function next() {
     strike.innerText = "";
@@ -184,45 +255,6 @@ function next() {
     update();
 }
 
-if (inning === '2') next();
-
-function startRecording() {
-    chunks = [];
-    discard = false;
-
-    recorder = new MediaRecorder(stream);
-    recorder.ondataavailable = e => {
-        if (e.data.size) chunks.push(e.data);
-    };
-
-    // ✅ CHANGED: save blob to IndexedDB, store only the ID in memory
-    recorder.onstop = async () => {
-        if (discard) return;
-
-        const blob = new Blob(chunks, { type: "video/webm" });
-        const base64Video = await blobToBase64(blob);
-
-        // Save to IndexedDB and get back a lightweight ID
-        const videoID = await VideoDB.save(base64Video);
-
-        lastBallVideoID = videoID;
-
-        overVideos.push(videoID);
-
-        // keep only last 6 balls (1 over)
-        if (overVideos.length > 6) {
-            overVideos.shift();
-        }
-
-        status.textContent = "Ball recorded";
-    };
-
-    recorder.start();
-    isRecording = true;
-    isPaused = false;
-    recordBtn.textContent = "⏸";
-    status.textContent = "Recording…";
-}
 
 function togglePause() {
     if (!isRecording) return;
