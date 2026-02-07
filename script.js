@@ -533,10 +533,21 @@ document.querySelectorAll(".square, .circle").forEach(btn => {
             });
         }
 
-        if (run === 1 || run === 3 || players.totalballs % 6 === 0) {
+        const isOddRun = run % 2 === 1;
+        const isOverEnd = players.totalballs % 6 === 0;
+
+        // Change strike for odd runs (ONLY if not end of over)
+        if (isOddRun && !isOverEnd) {
             [strike.innerText, nonstrike.innerText] =
                 [nonstrike.innerText, strike.innerText];
         }
+
+        // Change strike at end of over (ONLY if even run)
+        if (isOverEnd && !isOddRun) {
+            [strike.innerText, nonstrike.innerText] =
+                [nonstrike.innerText, strike.innerText];
+        }
+
 
         if (players.totalballs % 6 === 0) {
             players.overs++;
@@ -556,6 +567,26 @@ document.querySelectorAll(".square, .circle").forEach(btn => {
         document.querySelector(".display").classList.remove("lock");
     });
 });
+// ---- wide balle button ----//
+
+document.querySelector(".wide-btn")?.addEventListener("click", () => {
+    console.log("Wide ball button clicked");
+    if (!allset) return;
+    butts.classList.add("lock");
+    document.getElementById("radialMenu").classList.toggle("active");
+    console.log("test two");
+
+    // Wide ball: do absolutely nothing to score or balls
+    status.textContent = "Wide ball";
+
+    // Unlock controls so next ball can be played
+    butts.classList.add("lock");
+    document.querySelector("#radialBtn").classList.add("lock");
+    document.querySelector(".display").classList.remove("lock");
+
+    // No update(), no ball increment, no strike change
+});
+
 
 // --- Scoring: Wicket Button ---
 document.querySelector(".bold-btn").addEventListener("click", () => {
