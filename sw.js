@@ -4,25 +4,26 @@ const DYNAMIC_CACHE = 'cricket-dynamic-v2';
 const OFFLINE_CACHE = 'cricket-offline-v2';
 
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/team.html',
-  '/match.html',
-  '/oversummary.html',
-  '/inning-over.html',
-  '/matchover.html',
-  '/match_summary.html',
-  '/index.js',
-  '/f.js',
-  '/script.js',
-  '/app.js',
-  '/end.js',
-  '/inning-over.js',
-  '/pwa-utils.js',
-  '/end.css',
-  '/inning-over.css',
-  '/manifest.json'
+  './',
+  './index.html',
+  './team.html',
+  './match.html',
+  './oversummary.html',
+  './inning-over.html',
+  './matchover.html',
+  './match_summary.html',
+  './index.js',
+  './f.js',
+  './script.js',
+  './app.js',
+  './end.js',
+  './inning-over.js',
+  './pwa-utils.js',
+  './end.css',
+  './inning-over.css',
+  './manifest.json'
 ];
+
 
 // Install event - cache resources
 self.addEventListener('install', event => {
@@ -33,7 +34,7 @@ self.addEventListener('install', event => {
           .catch(() => Promise.resolve());
       }),
       caches.open(OFFLINE_CACHE).then(cache => {
-        return cache.addAll(['/index.html'])
+        return cache.addAll(['./index.html'])
           .catch(() => Promise.resolve());
       })
     ]).then(() => self.skipWaiting())
@@ -124,7 +125,7 @@ self.addEventListener('fetch', event => {
         .catch(() => {
           // Offline fallback
           if (request.mode === 'navigate') {
-            return caches.match('/index.html')
+            return caches.match('./index.html')
               .then(response => response || new Response('You are offline'));
           }
           return new Response('Resource not available');
@@ -192,12 +193,12 @@ self.addEventListener('notificationclick', event => {
   event.waitUntil(
     clients.matchAll({ type: 'window' }).then(clientList => {
       for (let i = 0; i < clientList.length; i++) {
-        if (clientList[i].url === '/' && 'focus' in clientList[i]) {
+        if (clientList[i].url.includes('index.html') && 'focus' in clientList[i]){
           return clientList[i].focus();
         }
       }
       if (clients.openWindow) {
-        return clients.openWindow('/');
+        return clients.openWindow('./index.html');
       }
     })
   );
