@@ -81,7 +81,6 @@ let autoPlayTimer;
 /* ==========================================================================
    VIDEO MODAL
    ========================================================================== */
-// receives an already-resolved base64 src — never an ID
 function playVideo(src) {
     const modal  = document.getElementById("video-modal");
     const wrapper = document.getElementById("modal-video-wrapper");
@@ -93,7 +92,6 @@ function closeVideoModal() {
     const modal  = document.getElementById("video-modal");
     const wrapper = document.getElementById("modal-video-wrapper");
     modal.classList.add("hidden");
-    // stop playback & free memory
     const v = wrapper.querySelector("video");
     if (v) { v.pause(); v.src = ""; }
     wrapper.innerHTML = "";
@@ -115,12 +113,16 @@ let players = loadPlayers();
 /* ==========================================================================
    RENDER
    ========================================================================== */
-// ✅ CHANGED: async so renderVideos can be awaited
 async function renderUI() {
     renderCards();
     renderDots();
     await renderVideos();
+    updatePlayerCount();
     lucide.createIcons();
+}
+
+function updatePlayerCount() {
+    document.getElementById('player-count').textContent = players.length;
 }
 
 function renderCards() {
@@ -142,33 +144,33 @@ function renderCards() {
         else               classes += 'z-10 scale-75 opacity-0';
 
         container.innerHTML += `
-            <div class="${classes}" style="width: 90%; max-width: 350px;">
-                <div class="bg-gradient-to-br from-white to-gray-100 rounded-3xl shadow-2xl overflow-hidden border-4 border-yellow-400">
-                    <div class="relative h-64 overflow-hidden">
+            <div class="${classes}" style="width: 90%; max-width: 320px;">
+                <div class="player-card-bg rounded-2xl shadow-2xl overflow-hidden">
+                    <div class="player-card-img relative h-48">
                         <img src="${player.image}" alt="${player.name}" class="w-full h-full object-cover">
-                        <div class="absolute top-4 right-4 bg-yellow-400 text-black px-3 py-1 rounded-full font-bold text-sm flex items-center">
-                            <i data-lucide="star" class="w-4 h-4 mr-1"></i>
-                            LEGEND
+                        <div class="absolute top-3 right-3 bg-emerald-500 text-white px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1 shadow-lg">
+                            <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                            ACTIVE
                         </div>
                     </div>
-                    <div class="p-6">
-                        <h3 class="text-2xl font-black text-gray-900 mb-4 text-center">${player.name}</h3>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="bg-blue-500 rounded-xl p-3 text-white text-center">
-                                <div class="text-2xl font-bold">${player.matches}</div>
-                                <div class="text-xs opacity-90">Matches</div>
+                    <div class="p-4">
+                        <h3 class="text-xl font-black text-white mb-3">${player.name}</h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="stat-box rounded-lg p-2.5 text-center">
+                                <div class="text-lg font-bold text-emerald-400">${player.matches}</div>
+                                <div class="text-xs text-white/60 font-medium">Matches</div>
                             </div>
-                            <div class="bg-green-500 rounded-xl p-3 text-white text-center">
-                                <div class="text-2xl font-bold">${player.runs}</div>
-                                <div class="text-xs opacity-90">Runs</div>
+                            <div class="stat-box rounded-lg p-2.5 text-center">
+                                <div class="text-lg font-bold text-blue-400">${player.runs}</div>
+                                <div class="text-xs text-white/60 font-medium">Runs</div>
                             </div>
-                            <div class="bg-orange-500 rounded-xl p-3 text-white text-center">
-                                <div class="text-2xl font-bold">${player.highScore}</div>
-                                <div class="text-xs opacity-90">High Score</div>
+                            <div class="stat-box rounded-lg p-2.5 text-center">
+                                <div class="text-lg font-bold text-amber-400">${player.highScore}</div>
+                                <div class="text-xs text-white/60 font-medium">High Score</div>
                             </div>
-                            <div class="bg-purple-500 rounded-xl p-3 text-white text-center">
-                                <div class="text-2xl font-bold">${player.average}</div>
-                                <div class="text-xs opacity-90">Average</div>
+                            <div class="stat-box rounded-lg p-2.5 text-center">
+                                <div class="text-lg font-bold text-purple-400">${player.average}</div>
+                                <div class="text-xs text-white/60 font-medium">Average</div>
                             </div>
                         </div>
                     </div>
@@ -203,7 +205,7 @@ function renderDots() {
 
     players.forEach((_, index) => {
         const isActive = index === currentCard;
-        const widthClass = isActive ? 'w-8 bg-yellow-400' : 'w-3 bg-white/50 hover:bg-white/80';
+        const widthClass = isActive ? 'w-8 bg-emerald-400' : 'w-3 bg-white/30 hover:bg-white/50';
 
         const dot = document.createElement('button');
         dot.className = `h-3 rounded-full transition-all ${widthClass}`;
@@ -216,7 +218,6 @@ function renderDots() {
     });
 }
 
-// ✅ CHANGED: fully async — resolves every video ID before adding any element
 async function renderVideos() {
     const currentPlayer = players[currentCard];
     const videoGrid = document.getElementById('video-grid');
@@ -227,31 +228,29 @@ async function renderVideos() {
     const tabSixes = document.getElementById('tab-sixes');
 
     if (activeTab === 'fours') {
-        tabFours.className = 'px-6 py-3 rounded-full font-bold transition-all bg-yellow-400 text-black scale-110';
-        tabSixes.className = 'px-6 py-3 rounded-full font-bold transition-all bg-white/20 text-white hover:bg-white/30';
+        tabFours.className = 'flex-1 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/30';
+        tabSixes.className = 'flex-1 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all glass-effect text-white/70 border border-white/10 hover:bg-white/10';
     } else {
-        tabFours.className = 'px-6 py-3 rounded-full font-bold transition-all bg-white/20 text-white hover:bg-white/30';
-        tabSixes.className = 'px-6 py-3 rounded-full font-bold transition-all bg-yellow-400 text-black scale-110';
+        tabFours.className = 'flex-1 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all glass-effect text-white/70 border border-white/10 hover:bg-white/10';
+        tabSixes.className = 'flex-1 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/30';
     }
 
     const rawVideos = currentPlayer[activeTab] || [];
 
-    // ✅ resolve every ID → base64 before touching the DOM
     const resolved = [];
     for (const v of rawVideos) {
         const src = await VideoDB.get(v.video).catch(() => null);
         if (src) resolved.push({ src, over: v.over, ball: v.ball });
     }
 
-    // Now build DOM with real base64 srcs
     resolved.forEach(item => {
         const card = document.createElement("div");
-        card.className = "bg-black rounded-xl p-2 cursor-pointer";
-        card.onclick = () => playVideo(item.src);   // already resolved
+        card.className = "bg-black/50 border border-white/10 rounded-lg p-2 cursor-pointer video-hover";
+        card.onclick = () => playVideo(item.src);
 
         card.innerHTML = `
-            <video src="${item.src}" class="w-full h-32 object-cover rounded" muted></video>
-            <p class="text-white text-xs text-center mt-1">Over ${item.over}.${item.ball}</p>
+            <video src="${item.src}" class="w-full h-28 object-cover rounded" muted></video>
+            <p class="text-white/80 text-xs text-center mt-1.5 font-medium">Over ${item.over}.${item.ball}</p>
         `;
 
         videoGrid.appendChild(card);
@@ -423,4 +422,3 @@ window.addEventListener('DOMContentLoaded', () => {
     renderUI();
     startTimer();
 });
-
